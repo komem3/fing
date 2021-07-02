@@ -1,0 +1,3 @@
+[submodule "testdata/Sample-Test-Files"]
+	path = testdata/Sample-Test-Files
+	url = git@github.com:buildingSMART/Sample-Test-Files.git
