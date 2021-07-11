@@ -23,12 +23,7 @@ func run(args []string, stdout, stderr io.Writer) error {
 	for i := range paths {
 		walker.Walk(paths[i])
 	}
-
-	select {
-	case <-walker.Done():
-	case <-walker.Timeout():
-		return fmt.Errorf("process is timeout")
-	}
+	walker.Wait()
 
 	if err := out.Flush(); err != nil {
 		log.Printf("[ERROR] %v", err)

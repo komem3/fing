@@ -5,20 +5,14 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"runtime/debug"
 	"strconv"
-	"time"
 
 	"github.com/komem3/fing/filter"
 )
 
 const defaultMakeLen = 1 << 2
 
-var (
-	isGC         bool
-	isNot        bool
-	isNotProcess bool
-)
+var isNot bool
 
 type boolFunc func(bool)
 
@@ -36,18 +30,13 @@ func (i boolFunc) Set(s string) error {
 }
 
 var Usage = `
-Usage: fing [staring-point...] [options|expression]
+Usage: fing [flag] [staring-point...] [expression]
 
 Fing is a simple and fast file finder.
 
-options are:
+flags are:
   -I
     Ignore files in .gitignore.
-  -timeout
-    Search time limit. (default 10s)
-  -enable_gc
-    Garbage collection is enable option.
-    Default is disabled to speed up execution.
 
 expression are:
   -iname string
@@ -61,9 +50,6 @@ expression are:
     This option match only to file name.
   -not
    True if next expression false.
-  -not( expression -not)
-   True if next expression false in parentheses.
-   No support nested parenthese.
   -path string
     Search for files using wildcard expressions.
     This option match to file path.
@@ -90,20 +76,8 @@ func NewWalkerFromArgs(args []string, out, outerr io.Writer) (*Walker, []string,
 	flag := flag.NewFlagSet(args[0], flag.ExitOnError)
 	flag.Usage = func() { fmt.Fprint(os.Stderr, Usage) }
 	{
-		// options
-		flag.BoolVar(&walker.gitignore, "I", false, "")
-		flag.DurationVar(&walker.timeout, "timeout", time.Second*10, "")
-		flag.BoolVar(&isGC, "enable_gc", false, "")
-	}
-	{
 		// expression
 		flag.BoolVar(&isNot, "not", false, "")
-		flag.Var(boolFunc(func(b bool) {
-			isNotProcess = b
-		}), "not(", "")
-		flag.Var(boolFunc(func(b bool) {
-			isNotProcess = !b
-		}), "not)", "")
 		flag.Func("name", "", func(s string) error {
 			walker.filters = append(walker.filters, toFilter(filter.NewFileName(s)))
 			return nil
@@ -152,12 +126,10 @@ func NewWalkerFromArgs(args []string, out, outerr io.Writer) (*Walker, []string,
 		}), "prune", "")
 	}
 
-	roots, remain := getRoots(args[1:])
+	remine := setOption(walker, args[1:])
+	roots, remain := getRoots(remine)
 	if err := flag.Parse(remain); err != nil {
 		return nil, nil, err
-	}
-	if !isGC {
-		debug.SetGCPercent(-1)
 	}
 	return walker, roots, nil
 }
@@ -167,10 +139,24 @@ func toFilter(f filter.FileExp) filter.FileExp {
 		isNot = false
 		return filter.NewNotFilter(f)
 	}
-	if isNotProcess {
-		return filter.NewNotFilter(f)
-	}
 	return f
+}
+
+func setOption(walker *Walker, args []string) (remine []string) {
+	remine = args[:]
+	for len(remine) > 0 && len(remine[0]) > 0 {
+		switch remine[0] {
+		case "-I":
+			walker.gitignore = true
+		default:
+			return remine
+		}
+		if len(remine) == 1 {
+			return nil
+		}
+		remine = remine[1:]
+	}
+	return remine
 }
 
 func getRoots(args []string) (roots []string, remain []string) {

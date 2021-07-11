@@ -1,6 +1,7 @@
 package filter
 
 import (
+	"fmt"
 	"strings"
 	"sync"
 )
@@ -21,6 +22,8 @@ type glob struct {
 
 	matchPattern matchPattern
 	matchIndex   int
+
+	fmt.Stringer
 }
 
 const defaultBuf = 1 << 10
@@ -188,4 +191,8 @@ func (g *glob) match(s string) bool {
 	*pool = ddl[:0]
 	g.ddlPool.Put(pool)
 	return len(ddl[len(g.pattern)-1])+firstMatch == len(s) && ddl[len(g.pattern)-1][len(ddl[len(g.pattern)-1])-1]
+}
+
+func (g *glob) String() string {
+	return fmt.Sprintf("%s(%d)", g.pattern, g.matchPattern)
 }

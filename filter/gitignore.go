@@ -32,7 +32,7 @@ func (g *Gitignore) Add(src *Gitignore) *Gitignore {
 		return src
 	}
 	dst := make([]*Path, len(src.PathMatchers)+len(g.PathMatchers))
-	copy(dst, src.PathMatchers)
-	copy(dst[len(src.PathMatchers):], g.PathMatchers)
+	copy(dst, g.PathMatchers)
+	copy(dst[len(g.PathMatchers):], src.PathMatchers)
 	return &Gitignore{PathMatchers: dst}
 }

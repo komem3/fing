@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/komem3/fing/filter"
 )
@@ -35,20 +34,10 @@ type Walker struct {
 	wg        sync.WaitGroup
 	mux       sync.Mutex
 	openFiles chan struct{}
-	timeout   time.Duration
 }
 
-func (w *Walker) Timeout() <-chan time.Time {
-	return time.After(w.timeout)
-}
-
-func (w *Walker) Done() <-chan struct{} {
-	done := make(chan struct{})
-	go func() {
-		w.wg.Wait()
-		done <- struct{}{}
-	}()
-	return done
+func (w *Walker) Wait() {
+	w.wg.Wait()
 }
 
 func (w *Walker) Walk(root string) {
@@ -198,7 +187,7 @@ func (w *Walker) extractGitignore(root, path string) (ignore *filter.Gitignore, 
 		}
 		if file[0] == '!' {
 			if file[1] == '*' {
-				ignore.PathMatchers = append(ignore.PathMatchers, filter.NewNotPath(file))
+				ignore.PathMatchers = append(ignore.PathMatchers, filter.NewNotPath(file[1:]))
 				continue
 			}
 			if file[1] != '/' {

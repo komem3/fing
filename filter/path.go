@@ -1,6 +1,7 @@
 package filter
 
 import (
+	"fmt"
 	"io/fs"
 	"strings"
 )
@@ -9,6 +10,8 @@ type (
 	Path struct {
 		*glob
 		pathType pathType
+
+		fmt.Stringer
 	}
 	IPath struct {
 		*glob
@@ -55,4 +58,8 @@ func (p *Path) Match(path string, _ fs.DirEntry) (bool, error) {
 
 func (p *IPath) Match(path string, _ fs.DirEntry) (bool, error) {
 	return p.match(strings.ToUpper(path)), nil
+}
+
+func (p *Path) String() string {
+	return fmt.Sprintf("%s(%d)", p.glob, p.pathType)
 }
