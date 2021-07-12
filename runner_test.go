@@ -25,12 +25,10 @@ var tests = []struct {
 		},
 	},
 	{
-		"fing -I testdata -type f",
+		"fing -I testdata -type f -not -name .*",
 		[]string{
-			"testdata/.gitignore",
 			"testdata/txt_dir/1.txt",
 			"testdata/txt_dir/2.txt",
-			"testdata/txt_dir/.gitignore",
 		},
 	},
 	{
@@ -41,7 +39,7 @@ var tests = []struct {
 		},
 	},
 	{
-		"fing testdata -path *_dir -prune -iregex (1|2).*",
+		"fing testdata -name *_dir -prune -iregex (1|2).*",
 		[]string{
 			"testdata/link/1.ln",
 			"testdata/link/2.ln",

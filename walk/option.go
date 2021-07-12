@@ -12,8 +12,6 @@ import (
 
 const defaultMakeLen = 1 << 2
 
-var isNot bool
-
 type boolFunc func(bool)
 
 func (boolFunc) String() string { return "false" }
@@ -32,7 +30,7 @@ func (i boolFunc) Set(s string) error {
 var Usage = `
 Usage: fing [flag] [staring-point...] [expression]
 
-Fing is a simple and fast file finder.
+Fing is simple and very like find file finder.
 
 flags are:
   -I
@@ -58,7 +56,7 @@ expression are:
     Search for files using wildcard expressions.
     This option match to file path.
   -prune
-    Prunes files and directory that match before expressions.
+    Prunes directory that match before expressions.
   -regex string
     Search for files using regular expressions.
     This option match to file path.
@@ -86,22 +84,23 @@ func NewWalkerFromArgs(args []string, out, outerr io.Writer) (*Walker, []string,
 
 	exp := make(filter.AndExp, 0, defaultMakeLen)
 	{
+		var isNot bool
 		// expression
 		flag.BoolVar(&isNot, "not", false, "")
 		flag.Func("name", "", func(s string) error {
-			exp = append(exp, toFilter(filter.NewFileName(s)))
+			exp = append(exp, toFilter(filter.NewFileName(s), &isNot))
 			return nil
 		})
 		flag.Func("iname", "", func(s string) error {
-			exp = append(exp, toFilter(filter.NewIFileName(s)))
+			exp = append(exp, toFilter(filter.NewIFileName(s), &isNot))
 			return nil
 		})
 		flag.Func("path", "", func(s string) error {
-			exp = append(exp, toFilter(filter.NewPath(s)))
+			exp = append(exp, toFilter(filter.NewPath(s), &isNot))
 			return nil
 		})
 		flag.Func("ipath", "", func(s string) error {
-			exp = append(exp, toFilter(filter.NewIPath(s)))
+			exp = append(exp, toFilter(filter.NewIPath(s), &isNot))
 			return nil
 		})
 		flag.Func("regex", "", func(s string) error {
@@ -109,7 +108,7 @@ func NewWalkerFromArgs(args []string, out, outerr io.Writer) (*Walker, []string,
 			if err != nil {
 				return err
 			}
-			exp = append(exp, toFilter(f))
+			exp = append(exp, toFilter(f, &isNot))
 			return nil
 		})
 		flag.Func("iregex", "", func(s string) error {
@@ -117,7 +116,7 @@ func NewWalkerFromArgs(args []string, out, outerr io.Writer) (*Walker, []string,
 			if err != nil {
 				return err
 			}
-			exp = append(exp, toFilter(f))
+			exp = append(exp, toFilter(f, &isNot))
 			return nil
 		})
 		flag.Func("rname", "", func(s string) error {
@@ -125,7 +124,7 @@ func NewWalkerFromArgs(args []string, out, outerr io.Writer) (*Walker, []string,
 			if err != nil {
 				return err
 			}
-			exp = append(exp, toFilter(f))
+			exp = append(exp, toFilter(f, &isNot))
 			return nil
 		})
 		flag.Func("irname", "", func(s string) error {
@@ -133,7 +132,7 @@ func NewWalkerFromArgs(args []string, out, outerr io.Writer) (*Walker, []string,
 			if err != nil {
 				return err
 			}
-			exp = append(exp, toFilter(f))
+			exp = append(exp, toFilter(f, &isNot))
 			return nil
 		})
 		flag.Func("type", "", func(s string) error {
@@ -141,7 +140,7 @@ func NewWalkerFromArgs(args []string, out, outerr io.Writer) (*Walker, []string,
 			if err != nil {
 				return err
 			}
-			exp = append(exp, toFilter(f))
+			exp = append(exp, toFilter(f, &isNot))
 			return nil
 		})
 		flag.Var(boolFunc(func(b bool) {
@@ -168,9 +167,9 @@ func NewWalkerFromArgs(args []string, out, outerr io.Writer) (*Walker, []string,
 	return walker, roots, nil
 }
 
-func toFilter(f filter.FileExp) filter.FileExp {
-	if isNot {
-		isNot = false
+func toFilter(f filter.FileExp, isNot *bool) filter.FileExp {
+	if *isNot {
+		*isNot = false
 		return filter.NewNotExp(f)
 	}
 	return f
