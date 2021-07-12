@@ -6,50 +6,50 @@ import (
 	"github.com/komem3/fing/filter"
 )
 
-const regexFile = "src/index.ts"
+var regexNameFile = filter.NewMockDriEntry("index.ts", false, 0, nil)
 
-func TestRegex_Match(t *testing.T) {
+func TestRegexName_Match(t *testing.T) {
 	t.Parallel()
 	for _, tt := range []struct {
 		pattern string
 		match   bool
 	}{
-		{`src/.*\.ts`, true},
-		{`src/.*\.TS`, false},
-		{`src/false.ts`, false},
+		{".*\\.ts", true},
+		{".*\\.TS", false},
+		{"src/.*ts", false},
 	} {
 		tt := tt
 		t.Run(tt.pattern, func(t *testing.T) {
 			t.Parallel()
-			filter, err := filter.NewRegex(tt.pattern)
+			filter, err := filter.NewRegexName(tt.pattern)
 			if err != nil {
 				t.Fatal(err)
 			}
-			if match := filter.Match(regexFile, nil); match != tt.match {
+			if match := filter.Match("", regexNameFile); match != tt.match {
 				t.Errorf("match want %t, but got %t", tt.match, match)
 			}
 		})
 	}
 }
 
-func TestIRegex_Match(t *testing.T) {
+func TestIRegexName_Match(t *testing.T) {
 	t.Parallel()
 	for _, tt := range []struct {
 		pattern string
 		match   bool
 	}{
-		{`src/.*\.ts`, true},
-		{`src/.*\.TS`, true},
-		{`src/false.ts`, false},
+		{".*\\.ts", true},
+		{".*\\.TS", true},
+		{"src/.*ts", false},
 	} {
 		tt := tt
 		t.Run(tt.pattern, func(t *testing.T) {
 			t.Parallel()
-			filter, err := filter.NewIRegex(tt.pattern)
+			filter, err := filter.NewIRegexName(tt.pattern)
 			if err != nil {
 				t.Fatal(err)
 			}
-			if match := filter.Match(regexFile, nil); match != tt.match {
+			if match := filter.Match("", regexNameFile); match != tt.match {
 				t.Errorf("match want %t, but got %t", tt.match, match)
 			}
 		})

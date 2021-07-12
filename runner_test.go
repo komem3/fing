@@ -48,12 +48,24 @@ var tests = []struct {
 		},
 	},
 	{
-		"fing testdata -ipath *_dir/* -not -name *.jpg",
+		"fing testdata -ipath *_dir/* -not -rname (.*\\.txt|\\.gitignore)",
 		[]string{
+			"testdata/jpg_dir/1.jpg",
+			"testdata/jpg_dir/2.jpg",
+			"testdata/jpg_dir/3.jpg",
 			"testdata/jpg_dir/4.JPG",
 			"testdata/png_dir/1.png",
 			"testdata/png_dir/2.png",
 			"testdata/png_dir/3.png",
+		},
+	},
+	{
+		"fing testdata -name jpg* -or -name png* -prune -irname (1|2).*",
+		[]string{
+			"testdata/link/1.ln",
+			"testdata/link/2.ln",
+			"testdata/txt_dir/1.txt",
+			"testdata/txt_dir/2.txt",
 		},
 	},
 }

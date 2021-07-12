@@ -18,9 +18,9 @@ const openFileMax = 1 << 9
 const defaultIgnoreBuffer = 1 << 7
 
 type Walker struct {
-	// filters
-	filters []filter.FileExp
-	prunes  []filter.FileExp
+	// matcher
+	matcher filter.OrExp
+	prunes  filter.OrExp
 
 	// options
 	gitignore bool
@@ -75,29 +75,14 @@ func (w *Walker) walk(root string, gitignores *filter.Gitignore) {
 
 func (w *Walker) walkFile(path string, info fs.DirEntry, ignores *filter.Gitignore) {
 	if ignores != nil {
-		match, err := ignores.Match(path, info)
-		if err != nil {
-			w.writeError(err)
-			return
-		}
-		if match {
-			return
-		}
-	}
-	for i := range w.prunes {
-		match, err := w.prunes[i].Match(path, info)
-		if err != nil {
-			w.writeError(err)
-			return
-		}
-		if !match {
-			break
-		}
-		if i == len(w.prunes)-1 {
+		if ignores.Match(path, info) {
 			return
 		}
 	}
 	if info.IsDir() {
+		if len(w.prunes) > 0 && w.prunes.Match(path, info) {
+			return
+		}
 		w.wg.Add(1)
 		go func() {
 			if info.Name() == ".git" {
@@ -108,17 +93,9 @@ func (w *Walker) walkFile(path string, info fs.DirEntry, ignores *filter.Gitigno
 			w.wg.Done()
 		}()
 	}
-	for i := range w.filters {
-		match, err := w.filters[i].Match(path, info)
-		if err != nil {
-			w.writeError(err)
-			return
-		}
-		if !match {
-			return
-		}
+	if w.matcher.Match(path, info) {
+		w.writeFile(path, info)
 	}
-	w.writeFile(path, info)
 }
 
 func (w *Walker) writeError(err error) {

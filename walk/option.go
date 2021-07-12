@@ -45,11 +45,15 @@ expression are:
 		Like -path, but the match is case insensitive.
   -iregex string
 		Like -regex, but the match is case insensitive.
+  -irname string
+		Like -rname, but the match is case insensitive.
   -name string
     Search for files using wildcard expressions.
     This option match only to file name.
   -not
-   True if next expression false.
+    True if next expression false.
+  -or
+    Evaluate the previous and next expressions with or.
   -path string
     Search for files using wildcard expressions.
     This option match to file path.
@@ -59,6 +63,10 @@ expression are:
     Search for files using regular expressions.
     This option match to file path.
     Unlike find, this is a backward match.
+  -rname string
+    Search for files using regular expressions.
+    This option match only to file name..
+    Unlike regex option, this option is exact match.
   -type string
     File is type.
     Support file(f), directory(d), named piep(p) and socket(s).
@@ -66,8 +74,8 @@ expression are:
 
 func NewWalkerFromArgs(args []string, out, outerr io.Writer) (*Walker, []string, error) {
 	walker := &Walker{
-		filters:   make([]filter.FileExp, 0, defaultMakeLen),
-		prunes:    make([]filter.FileExp, 0, defaultMakeLen),
+		matcher:   make(filter.OrExp, 0, defaultMakeLen),
+		prunes:    make(filter.OrExp, 0, defaultMakeLen),
 		out:       out,
 		outerr:    outerr,
 		openFiles: make(chan struct{}, openFileMax),
@@ -75,23 +83,25 @@ func NewWalkerFromArgs(args []string, out, outerr io.Writer) (*Walker, []string,
 
 	flag := flag.NewFlagSet(args[0], flag.ExitOnError)
 	flag.Usage = func() { fmt.Fprint(os.Stderr, Usage) }
+
+	exp := make(filter.AndExp, 0, defaultMakeLen)
 	{
 		// expression
 		flag.BoolVar(&isNot, "not", false, "")
 		flag.Func("name", "", func(s string) error {
-			walker.filters = append(walker.filters, toFilter(filter.NewFileName(s)))
+			exp = append(exp, toFilter(filter.NewFileName(s)))
 			return nil
 		})
 		flag.Func("iname", "", func(s string) error {
-			walker.filters = append(walker.filters, toFilter(filter.NewIFileName(s)))
+			exp = append(exp, toFilter(filter.NewIFileName(s)))
 			return nil
 		})
 		flag.Func("path", "", func(s string) error {
-			walker.filters = append(walker.filters, toFilter(filter.NewPath(s)))
+			exp = append(exp, toFilter(filter.NewPath(s)))
 			return nil
 		})
 		flag.Func("ipath", "", func(s string) error {
-			walker.filters = append(walker.filters, toFilter(filter.NewIPath(s)))
+			exp = append(exp, toFilter(filter.NewIPath(s)))
 			return nil
 		})
 		flag.Func("regex", "", func(s string) error {
@@ -99,7 +109,7 @@ func NewWalkerFromArgs(args []string, out, outerr io.Writer) (*Walker, []string,
 			if err != nil {
 				return err
 			}
-			walker.filters = append(walker.filters, toFilter(f))
+			exp = append(exp, toFilter(f))
 			return nil
 		})
 		flag.Func("iregex", "", func(s string) error {
@@ -107,7 +117,23 @@ func NewWalkerFromArgs(args []string, out, outerr io.Writer) (*Walker, []string,
 			if err != nil {
 				return err
 			}
-			walker.filters = append(walker.filters, toFilter(f))
+			exp = append(exp, toFilter(f))
+			return nil
+		})
+		flag.Func("rname", "", func(s string) error {
+			f, err := filter.NewRegexName(s)
+			if err != nil {
+				return err
+			}
+			exp = append(exp, toFilter(f))
+			return nil
+		})
+		flag.Func("irname", "", func(s string) error {
+			f, err := filter.NewIRegexName(s)
+			if err != nil {
+				return err
+			}
+			exp = append(exp, toFilter(f))
 			return nil
 		})
 		flag.Func("type", "", func(s string) error {
@@ -115,15 +141,22 @@ func NewWalkerFromArgs(args []string, out, outerr io.Writer) (*Walker, []string,
 			if err != nil {
 				return err
 			}
-			walker.filters = append(walker.filters, toFilter(f))
+			exp = append(exp, toFilter(f))
 			return nil
 		})
 		flag.Var(boolFunc(func(b bool) {
 			if b {
-				walker.prunes = append(walker.prunes, walker.filters...)
-				walker.filters = walker.filters[:0]
+				walker.matcher = append(walker.matcher, exp)
+				walker.prunes = append(walker.prunes, walker.matcher...)
+				exp = make(filter.AndExp, 0, defaultMakeLen)
 			}
 		}), "prune", "")
+		flag.Var(boolFunc(func(b bool) {
+			if b {
+				walker.matcher = append(walker.matcher, exp)
+				exp = make(filter.AndExp, 0, defaultMakeLen)
+			}
+		}), "or", "")
 	}
 
 	remine := setOption(walker, args[1:])
@@ -131,13 +164,14 @@ func NewWalkerFromArgs(args []string, out, outerr io.Writer) (*Walker, []string,
 	if err := flag.Parse(remain); err != nil {
 		return nil, nil, err
 	}
+	walker.matcher = append(walker.matcher, exp)
 	return walker, roots, nil
 }
 
 func toFilter(f filter.FileExp) filter.FileExp {
 	if isNot {
 		isNot = false
-		return filter.NewNotFilter(f)
+		return filter.NewNotExp(f)
 	}
 	return f
 }

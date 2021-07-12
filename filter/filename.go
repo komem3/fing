@@ -27,10 +27,10 @@ func NewIFileName(pattern string) *IFileName {
 	return &IFileName{glob: newGlob(strings.ToUpper(pattern))}
 }
 
-func (f *FileName) Match(_ string, info fs.DirEntry) (bool, error) {
-	return f.match(info.Name()), nil
+func (f *FileName) Match(_ string, info fs.DirEntry) bool {
+	return f.match(info.Name())
 }
 
-func (f IFileName) Match(_ string, info fs.DirEntry) (bool, error) {
-	return f.match(strings.ToUpper(info.Name())), nil
+func (f IFileName) Match(_ string, info fs.DirEntry) bool {
+	return f.match(strings.ToUpper(info.Name()))
 }

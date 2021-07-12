@@ -46,7 +46,7 @@ func TestGitignore_Match(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			if match, _ := (&filter.Gitignore{PathMatchers: tt.ignore}).Match(tt.filename, nil); match != tt.match {
+			if match := (&filter.Gitignore{PathMatchers: tt.ignore}).Match(tt.filename, nil); match != tt.match {
 				t.Errorf("Match want %t, but got %t", tt.match, match)
 			}
 		})

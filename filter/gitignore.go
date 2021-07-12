@@ -10,18 +10,14 @@ type Gitignore struct {
 
 var _ FileExp = (*Gitignore)(nil)
 
-func (g *Gitignore) Match(path string, info fs.DirEntry) (bool, error) {
+func (g *Gitignore) Match(path string, info fs.DirEntry) bool {
 	var match bool
 	for i := range g.PathMatchers {
-		m, err := g.PathMatchers[i].Match(path, info)
-		if err != nil {
-			return false, err
-		}
-		if m {
+		if g.PathMatchers[i].Match(path, info) {
 			match = g.PathMatchers[i].pathType == normalPathType
 		}
 	}
-	return match, nil
+	return match
 }
 
 func (g *Gitignore) Add(src *Gitignore) *Gitignore {
