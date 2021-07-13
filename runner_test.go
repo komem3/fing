@@ -39,22 +39,18 @@ var tests = []struct {
 		},
 	},
 	{
-		"fing testdata -name *_dir -prune -iregex (1|2).*",
+		"fing testdata -name .* -prune -path */link/* -or -name *.txt",
 		[]string{
 			"testdata/link/1.ln",
 			"testdata/link/2.ln",
+			"testdata/txt_dir/1.txt",
+			"testdata/txt_dir/2.txt",
 		},
 	},
 	{
-		"fing testdata -ipath *_dir/* -not -rname (.*\\.txt|\\.gitignore)",
+		"fing testdata -not -name .* -prune -not -type f",
 		[]string{
-			"testdata/jpg_dir/1.jpg",
-			"testdata/jpg_dir/2.jpg",
-			"testdata/jpg_dir/3.jpg",
-			"testdata/jpg_dir/4.JPG",
-			"testdata/png_dir/1.png",
-			"testdata/png_dir/2.png",
-			"testdata/png_dir/3.png",
+			"testdata/.hidden",
 		},
 	},
 	{
@@ -65,6 +61,10 @@ var tests = []struct {
 			"testdata/txt_dir/1.txt",
 			"testdata/txt_dir/2.txt",
 		},
+	},
+	{
+		"fing testdata -type f -ipath txt",
+		[]string{},
 	},
 }
 

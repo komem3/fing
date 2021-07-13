@@ -148,6 +148,7 @@ func NewWalkerFromArgs(args []string, out, outerr io.Writer) (*Walker, []string,
 				walker.matcher = append(walker.matcher, exp)
 				walker.prunes = append(walker.prunes, walker.matcher...)
 				exp = make(filter.AndExp, 0, defaultMakeLen)
+				walker.matcher = walker.matcher[:0]
 			}
 		}), "prune", "")
 		flag.Var(boolFunc(func(b bool) {
