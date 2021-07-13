@@ -14,22 +14,10 @@ sudo mv fing /usr/bin/
 
 ## Benchmark
 
-- fdfind vs find
+- fdfind vs find vs fing
 
 ```shell
-hyperfine --warmup 3 'fdfind -H -g -t f *.jpg' 'find -iname "*.jpg"'
-```
-
-- fing vs find
-
-```shell
-hyperfine --warmup 3 'fing -iname "*.jpg"' 'find -iname "*.jpg"'
-```
-
-- fing vs fdfind
-
-```shell
-hyperfine --warmup 3 'fing -iname "*.jpg"' 'fdfind -H -g -t f *.jpg'
+hyperfine --warmup 3  'fing -type f -iname "*.jpg"' 'find -type f -iname "*.jpg"' 'fdfind -I -H -g -t f "*.jpg"'
 ```
 
 ## TODO
