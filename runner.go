@@ -20,10 +20,7 @@ func run(args []string, stdout, stderr io.Writer) error {
 	if err != nil {
 		return err
 	}
-	for i := range paths {
-		walker.Walk(paths[i])
-	}
-	walker.Wait()
+	walker.Walk(paths)
 
 	if err := out.Flush(); err != nil {
 		log.Printf("[ERROR] %v", err)

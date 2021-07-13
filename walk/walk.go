@@ -13,9 +13,15 @@ import (
 	"github.com/komem3/fing/filter"
 )
 
-const openFileMax = 1 << 9
+const (
+	openFileMax    = 1 << 9
+	concurrencyMax = 1 << 5
+)
 
-const defaultIgnoreBuffer = 1 << 7
+const (
+	defaultIgnoreBuffer    = 1 << 7
+	defaultDirecotryBuffer = 1 << 5
+)
 
 type Walker struct {
 	// matcher
@@ -26,26 +32,49 @@ type Walker struct {
 	gitignore bool
 
 	// result
-	out    io.Writer
-	outerr io.Writer
-	IsErr  bool
+	out     io.Writer
+	outerr  io.Writer
+	IsErr   bool
+	targets []*direcotryInfo
 
 	// concurrency control
-	wg        sync.WaitGroup
-	mux       sync.Mutex
-	openFiles chan struct{}
+	wg          sync.WaitGroup
+	outmux      sync.Mutex
+	dirMux      sync.Mutex
+	openFiles   chan struct{}
+	concurrency chan struct{}
+}
+
+type direcotryInfo struct {
+	path   string
+	ignore *filter.Gitignore
 }
 
 func (w *Walker) Wait() {
 	w.wg.Wait()
 }
 
-func (w *Walker) Walk(root string) {
-	w.wg.Add(1)
-	go func() {
-		w.walk(root, nil)
-		w.wg.Done()
-	}()
+func (w *Walker) Walk(roots []*direcotryInfo) {
+	for len(roots) > 0 {
+		w.targets = w.targets[:0]
+		for i := range roots {
+			w.wg.Add(1)
+			w.concurrency <- struct{}{}
+			go func(root *direcotryInfo) {
+				w.walk(root.path, root.ignore)
+				<-w.concurrency
+				w.wg.Done()
+			}(roots[i])
+		}
+		w.wg.Wait()
+
+		if cap(roots) >= len(w.targets) {
+			roots = roots[:len(w.targets)]
+		} else {
+			roots = make([]*direcotryInfo, len(w.targets))
+		}
+		copy(roots, w.targets)
+	}
 }
 
 func (w *Walker) walk(root string, gitignores *filter.Gitignore) {
@@ -83,15 +112,13 @@ func (w *Walker) walkFile(path string, info fs.DirEntry, ignores *filter.Gitigno
 		if len(w.prunes) > 0 && w.prunes.Match(path, info) {
 			return
 		}
-		w.wg.Add(1)
-		go func() {
-			if info.Name() == ".git" {
-				w.walk(path, nil)
-			} else {
-				w.walk(path, ignores)
-			}
-			w.wg.Done()
-		}()
+		w.dirMux.Lock()
+		if info.Name() == ".git" {
+			w.targets = append(w.targets, &direcotryInfo{path: path})
+		} else {
+			w.targets = append(w.targets, &direcotryInfo{path: path, ignore: ignores})
+		}
+		w.dirMux.Unlock()
 	}
 	if w.matcher.Match(path, info) {
 		w.writeFile(path, info)
@@ -100,19 +127,19 @@ func (w *Walker) walkFile(path string, info fs.DirEntry, ignores *filter.Gitigno
 
 func (w *Walker) writeError(err error) {
 	w.IsErr = true
-	w.mux.Lock()
+	w.outmux.Lock()
 	if _, err := fmt.Fprintln(w.outerr, err.Error()); err != nil {
 		log.Printf("[ERROR] %v", err)
 	}
-	w.mux.Unlock()
+	w.outmux.Unlock()
 }
 
 func (w *Walker) writeFile(path string, _ fs.DirEntry) {
-	w.mux.Lock()
+	w.outmux.Lock()
 	if _, err := fmt.Fprintln(w.out, path); err != nil {
 		log.Printf("[ERROR] %v", err)
 	}
-	w.mux.Unlock()
+	w.outmux.Unlock()
 }
 
 func (w *Walker) readDir(dir string) (ds []fs.DirEntry, err error) {

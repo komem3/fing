@@ -70,13 +70,15 @@ expression are:
     Support file(f), directory(d), named piep(p) and socket(s).
 `
 
-func NewWalkerFromArgs(args []string, out, outerr io.Writer) (*Walker, []string, error) {
+func NewWalkerFromArgs(args []string, out, outerr io.Writer) (*Walker, []*direcotryInfo, error) {
 	walker := &Walker{
-		matcher:   make(filter.OrExp, 0, defaultMakeLen),
-		prunes:    make(filter.OrExp, 0, defaultMakeLen),
-		out:       out,
-		outerr:    outerr,
-		openFiles: make(chan struct{}, openFileMax),
+		matcher:     make(filter.OrExp, 0, defaultMakeLen),
+		prunes:      make(filter.OrExp, 0, defaultMakeLen),
+		out:         out,
+		outerr:      outerr,
+		targets:     make([]*direcotryInfo, 0, defaultDirecotryBuffer),
+		concurrency: make(chan struct{}, concurrencyMax),
+		openFiles:   make(chan struct{}, openFileMax),
 	}
 
 	flag := flag.NewFlagSet(args[0], flag.ExitOnError)
@@ -193,8 +195,8 @@ func setOption(walker *Walker, args []string) (remine []string) {
 	return remine
 }
 
-func getRoots(args []string) (roots []string, remain []string) {
-	roots = make([]string, 0, defaultMakeLen)
+func getRoots(args []string) (roots []*direcotryInfo, remain []string) {
+	roots = make([]*direcotryInfo, 0, defaultMakeLen)
 	for i, arg := range args {
 		if len(arg) == 0 {
 			break
@@ -202,12 +204,12 @@ func getRoots(args []string) (roots []string, remain []string) {
 		if arg[0] == '-' {
 			break
 		}
-		roots = append(roots, arg)
+		roots = append(roots, &direcotryInfo{path: arg})
 		remain = args[i+1:]
 	}
 
 	if len(roots) == 0 {
-		return []string{"."}, args
+		return []*direcotryInfo{{path: "."}}, args
 	}
 
 	return roots, remain

@@ -17,12 +17,9 @@ sudo mv fing /usr/bin/
 - fdfind vs find vs fing
 
 ```shell
-hyperfine --warmup 3  'fing -type f -iname "*.jpg"' 'find -type f -iname "*.jpg"' 'fdfind -I -H -g -t f "*.jpg"'
+hyperfine --warmup 3 'find -type f -iname "*.jpg"' 'fdfind -I -H -g -t f "*.jpg"' 'fing -type f -iname "*.jpg"'
 ```
 
 ## TODO
 
-- not option の実装
-- type option の実装
-- perm option の実装
 - exec の実装
