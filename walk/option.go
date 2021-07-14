@@ -78,7 +78,6 @@ func NewWalkerFromArgs(args []string, out, outerr io.Writer) (*Walker, []*direco
 		outerr:      outerr,
 		targets:     make([]*direcotryInfo, 0, defaultDirecotryBuffer),
 		concurrency: make(chan struct{}, concurrencyMax),
-		openFiles:   make(chan struct{}, openFileMax),
 	}
 
 	flag := flag.NewFlagSet(args[0], flag.ExitOnError)

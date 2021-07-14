@@ -52,7 +52,7 @@ var extactTests = []struct {
 }
 
 func TestWalker_extractGitignore(t *testing.T) {
-	walker := &Walker{openFiles: make(chan struct{}, openFileMax)}
+	walker := &Walker{}
 	for _, tt := range extactTests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {

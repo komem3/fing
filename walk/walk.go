@@ -7,20 +7,18 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 
 	"github.com/komem3/fing/filter"
 )
 
-const (
-	openFileMax    = 1 << 9
-	concurrencyMax = 1 << 5
-)
+var concurrencyMax = runtime.NumCPU() * 2
 
 const (
 	defaultIgnoreBuffer    = 1 << 7
-	defaultDirecotryBuffer = 1 << 5
+	defaultDirecotryBuffer = 1 << 7
 )
 
 type Walker struct {
@@ -41,7 +39,6 @@ type Walker struct {
 	wg          sync.WaitGroup
 	outmux      sync.Mutex
 	dirMux      sync.Mutex
-	openFiles   chan struct{}
 	concurrency chan struct{}
 }
 
@@ -143,15 +140,12 @@ func (w *Walker) writeFile(path string, _ fs.DirEntry) {
 }
 
 func (w *Walker) readDir(dir string) (ds []fs.DirEntry, err error) {
-	w.openFiles <- struct{}{}
 	f, err := os.Open(dir)
 	if err != nil {
-		<-w.openFiles
 		return nil, err
 	}
 	ds, err = f.ReadDir(-1)
 	f.Close()
-	<-w.openFiles
 	return
 }
 
@@ -165,9 +159,7 @@ func (*Walker) getIgnore(files []fs.DirEntry) string {
 }
 
 func (w *Walker) extractGitignore(root, path string) (ignore *filter.Gitignore, err error) {
-	w.openFiles <- struct{}{}
 	buf, err := os.ReadFile(filepath.Join(root, path))
-	<-w.openFiles
 	if err != nil {
 		return nil, err
 	}
