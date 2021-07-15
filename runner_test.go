@@ -25,14 +25,14 @@ var tests = []struct {
 		},
 	},
 	{
-		"fing -I testdata -type f -not -name .*",
+		"fing testdata -I -type f -not -name .*",
 		[]string{
 			"testdata/txt_dir/1.txt",
 			"testdata/txt_dir/2.txt",
 		},
 	},
 	{
-		"fing testdata -iname *.jpg -regex (3|4).*",
+		"fing testdata -iname *.jpg -regex .*(3|4).*",
 		[]string{
 			"testdata/jpg_dir/3.jpg",
 			"testdata/jpg_dir/4.JPG",
@@ -65,6 +65,12 @@ var tests = []struct {
 	{
 		"fing testdata -type f -ipath txt",
 		[]string{},
+	},
+	{
+		"fing testdata -dry -type f -ipath txt -prune -name png -or -regex name",
+		[]string{
+			"prunes: [type(file) * glob(TXT)] condition: [glob(png) + regex(^name$)]",
+		},
 	},
 }
 

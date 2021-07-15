@@ -28,23 +28,26 @@ func (i boolFunc) Set(s string) error {
 }
 
 var Usage = `
-Usage: fing [flag] [staring-point...] [expression]
+Usage: fing [staring-point...] [flag] [expression]
 
 Fing is simple and very like find file finder.
 
 flags are:
   -I
     Ignore files in .gitignore.
+  -dry
+    Do everything except actually find the files.
+    Output expression string.
 
 expression are:
   -iname string
-		Like -name, but the match is case insensitive.
+    Like -name, but the match is case insensitive.
   -ipath string
-		Like -path, but the match is case insensitive.
+    Like -path, but the match is case insensitive.
   -iregex string
-		Like -regex, but the match is case insensitive.
+    Like -regex, but the match is case insensitive.
   -irname string
-		Like -rname, but the match is case insensitive.
+    Like -rname, but the match is case insensitive.
   -name string
     Search for files using wildcard expressions.
     This option match only to file name.
@@ -160,8 +163,8 @@ func NewWalkerFromArgs(args []string, out, outerr io.Writer) (*Walker, []*direco
 		}), "or", "")
 	}
 
-	remine := setOption(walker, args[1:])
-	roots, remain := getRoots(remine)
+	roots, remain := getRoots(args[1:])
+	remain = setOption(walker, remain)
 	if err := flag.Parse(remain); err != nil {
 		return nil, nil, err
 	}
@@ -183,6 +186,8 @@ func setOption(walker *Walker, args []string) (remine []string) {
 		switch remine[0] {
 		case "-I":
 			walker.gitignore = true
+		case "-dry":
+			walker.IsDry = true
 		default:
 			return remine
 		}

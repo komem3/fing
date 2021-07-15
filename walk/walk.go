@@ -28,6 +28,7 @@ type Walker struct {
 
 	// options
 	gitignore bool
+	IsDry     bool
 
 	// result
 	out     io.Writer
@@ -40,15 +41,13 @@ type Walker struct {
 	outmux      sync.Mutex
 	dirMux      sync.Mutex
 	concurrency chan struct{}
+
+	fmt.Stringer
 }
 
 type direcotryInfo struct {
 	path   string
 	ignore *filter.Gitignore
-}
-
-func (w *Walker) Wait() {
-	w.wg.Wait()
 }
 
 func (w *Walker) Walk(roots []*direcotryInfo) {
@@ -72,6 +71,17 @@ func (w *Walker) Walk(roots []*direcotryInfo) {
 		}
 		copy(roots, w.targets)
 	}
+}
+
+func (w *Walker) String() string {
+	var s strings.Builder
+	if len(w.prunes) > 0 {
+		fmt.Fprintf(&s, "prunes: [%s] ", w.prunes)
+	}
+	if len(w.matcher) > 0 {
+		fmt.Fprintf(&s, "condition: [%s]", w.matcher)
+	}
+	return s.String()
 }
 
 func (w *Walker) walk(root string, gitignores *filter.Gitignore) {

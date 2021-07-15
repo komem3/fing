@@ -28,5 +28,8 @@ func (f FileType) Match(_ string, info fs.DirEntry) bool {
 }
 
 func (f FileType) String() string {
-	return fmt.Sprintf("type(%d)", f)
+	if fs.FileMode(f).IsRegular() {
+		return "type(file)"
+	}
+	return fmt.Sprintf("type(%s)", fs.FileMode(f))
 }

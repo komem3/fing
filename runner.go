@@ -20,6 +20,10 @@ func run(args []string, stdout, stderr io.Writer) error {
 	if err != nil {
 		return err
 	}
+	if walker.IsDry {
+		fmt.Fprintf(stdout, "%s\n", walker)
+		return nil
+	}
 	walker.Walk(paths)
 
 	if err := out.Flush(); err != nil {

@@ -194,5 +194,5 @@ func (g *glob) match(s string) bool {
 }
 
 func (g *glob) String() string {
-	return fmt.Sprintf("glob(%s(%d))", g.pattern, g.matchPattern)
+	return fmt.Sprintf("glob(%s)", g.pattern)
 }
