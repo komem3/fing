@@ -30,14 +30,14 @@ func (i boolFunc) Set(s string) error {
 var Usage = `
 Usage: fing [staring-point...] [flag] [expression]
 
-Fing is simple and very like find file finder.
+Fing is A fast file finder that provides an interface similar to find.
 
 flags are:
   -I
     Ignore files in .gitignore.
   -dry
-    Do everything except actually find the files.
-    Output expression string.
+    Only output parse result of expression.
+    If this option is specified, the file will not be searched.
 
 expression are:
   -iname string
@@ -73,13 +73,13 @@ expression are:
     Support file(f), directory(d), named piep(p) and socket(s).
 `
 
-func NewWalkerFromArgs(args []string, out, outerr io.Writer) (*Walker, []*direcotryInfo, error) {
+func NewWalkerFromArgs(args []string, out, outerr io.Writer) (*Walker, directoryInfos, error) {
 	walker := &Walker{
 		matcher:     make(filter.OrExp, 0, defaultMakeLen),
 		prunes:      make(filter.OrExp, 0, defaultMakeLen),
 		out:         out,
 		outerr:      outerr,
-		targets:     make([]*direcotryInfo, 0, defaultDirecotryBuffer),
+		targets:     make(directoryInfos, 0, defaultDirecotryBuffer),
 		concurrency: make(chan struct{}, concurrencyMax),
 	}
 
@@ -200,7 +200,7 @@ func setOption(walker *Walker, args []string) (remine []string) {
 }
 
 func getRoots(args []string) (roots []*direcotryInfo, remain []string) {
-	roots = make([]*direcotryInfo, 0, defaultMakeLen)
+	roots = make(directoryInfos, 0, defaultMakeLen)
 	for i, arg := range args {
 		if len(arg) == 0 {
 			break
@@ -213,7 +213,7 @@ func getRoots(args []string) (roots []*direcotryInfo, remain []string) {
 	}
 
 	if len(roots) == 0 {
-		return []*direcotryInfo{{path: "."}}, args
+		return directoryInfos{{path: "."}}, args
 	}
 
 	return roots, remain

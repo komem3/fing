@@ -34,7 +34,7 @@ type Walker struct {
 	out     io.Writer
 	outerr  io.Writer
 	IsErr   bool
-	targets []*direcotryInfo
+	targets directoryInfos
 
 	// concurrency control
 	wg          sync.WaitGroup
@@ -50,7 +50,9 @@ type direcotryInfo struct {
 	ignore *filter.Gitignore
 }
 
-func (w *Walker) Walk(roots []*direcotryInfo) {
+type directoryInfos []*direcotryInfo
+
+func (w *Walker) Walk(roots directoryInfos) {
 	for len(roots) > 0 {
 		w.targets = w.targets[:0]
 		for i := range roots {
@@ -67,7 +69,7 @@ func (w *Walker) Walk(roots []*direcotryInfo) {
 		if cap(roots) >= len(w.targets) {
 			roots = roots[:len(w.targets)]
 		} else {
-			roots = make([]*direcotryInfo, len(w.targets))
+			roots = make(directoryInfos, len(w.targets))
 		}
 		copy(roots, w.targets)
 	}
@@ -75,11 +77,14 @@ func (w *Walker) Walk(roots []*direcotryInfo) {
 
 func (w *Walker) String() string {
 	var s strings.Builder
+	if w.gitignore {
+		s.WriteString("ignore=true ")
+	}
 	if len(w.prunes) > 0 {
-		fmt.Fprintf(&s, "prunes: [%s] ", w.prunes)
+		fmt.Fprintf(&s, "prunes=[%s] ", w.prunes)
 	}
 	if len(w.matcher) > 0 {
-		fmt.Fprintf(&s, "condition: [%s]", w.matcher)
+		fmt.Fprintf(&s, "condition=[%s]", w.matcher)
 	}
 	return s.String()
 }
@@ -212,4 +217,12 @@ func (w *Walker) extractGitignore(root, path string) (ignore *filter.Gitignore, 
 		ignore.PathMatchers = append(ignore.PathMatchers, filter.NewPath(filepath.Join(root, file)))
 	}
 	return ignore, nil
+}
+
+func (d directoryInfos) String() string {
+	paths := make([]string, 0, len(d))
+	for _, p := range d {
+		paths = append(paths, p.path)
+	}
+	return strings.Join(paths, ", ")
 }

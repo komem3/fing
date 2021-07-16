@@ -21,7 +21,7 @@ func run(args []string, stdout, stderr io.Writer) error {
 		return err
 	}
 	if walker.IsDry {
-		fmt.Fprintf(stdout, "%s\n", walker)
+		fmt.Fprintf(stdout, "targets=[%s] %s\n", paths, walker)
 		return nil
 	}
 	walker.Walk(paths)

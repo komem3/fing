@@ -61,5 +61,9 @@ func (p *IPath) Match(path string, _ fs.DirEntry) bool {
 }
 
 func (p *Path) String() string {
-	return fmt.Sprintf("%s", p.glob)
+	return fmt.Sprintf("path(%s)", p.glob)
+}
+
+func (p *IPath) String() string {
+	return fmt.Sprintf("ipath(%s)", p.glob)
 }

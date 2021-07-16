@@ -1,6 +1,7 @@
 package filter
 
 import (
+	"fmt"
 	"io/fs"
 	"strings"
 )
@@ -33,4 +34,12 @@ func (f *FileName) Match(_ string, info fs.DirEntry) bool {
 
 func (f IFileName) Match(_ string, info fs.DirEntry) bool {
 	return f.match(strings.ToUpper(info.Name()))
+}
+
+func (f *FileName) String() string {
+	return fmt.Sprintf("name(%s)", f.glob)
+}
+
+func (f *IFileName) String() string {
+	return fmt.Sprintf("iname(%s)", f.glob)
 }
