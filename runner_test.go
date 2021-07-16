@@ -67,11 +67,11 @@ var tests = []struct {
 		[]string{},
 	},
 	{
-		"fing testdata/jpg_dir testdata/png_dir -dry -I -type f -ipath txt/* -prune -name *.png -or -regex .*\\.name",
+		"fing testdata/jpg_dir testdata/png_dir -dry -I -type f -ipath txt/* -prune -name *.png -or -not -regex .*\\.name",
 		[]string{
 			"targets=[testdata/jpg_dir, testdata/png_dir] " +
 				"ignore=true prunes=[type(file) * ipath(TXT/*)] " +
-				"condition=[name(*.png) + regex(^.*\\.name$)]",
+				"condition=[name(*.png) + not regex(^.*\\.name$)]",
 		},
 	},
 }
