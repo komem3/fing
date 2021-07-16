@@ -27,8 +27,9 @@ type Walker struct {
 	prunes  filter.OrExp
 
 	// options
-	gitignore bool
 	IsDry     bool
+	gitignore bool
+	depth     int
 
 	// result
 	out     io.Writer
@@ -53,7 +54,23 @@ type direcotryInfo struct {
 type directoryInfos []*direcotryInfo
 
 func (w *Walker) Walk(roots directoryInfos) {
-	for len(roots) > 0 {
+	for _, r := range roots {
+		f, err := os.Open(r.path)
+		if err != nil {
+			w.writeError(err)
+			continue
+		}
+		entry, err := newEntry(f)
+		f.Close()
+		if err != nil {
+			w.writeError(err)
+			continue
+		}
+		w.walkFile(r.path, entry, nil)
+	}
+
+	depth := 1
+	for len(roots) > 0 && (w.depth == -1 || depth <= w.depth) {
 		w.targets = w.targets[:0]
 		for i := range roots {
 			w.wg.Add(1)
@@ -72,6 +89,8 @@ func (w *Walker) Walk(roots directoryInfos) {
 			roots = make(directoryInfos, len(w.targets))
 		}
 		copy(roots, w.targets)
+
+		depth++
 	}
 }
 

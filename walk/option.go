@@ -38,6 +38,9 @@ flags are:
   -dry
     Only output parse result of expression.
     If this option is specified, the file will not be searched.
+  -maxdepth
+    The depth to search.
+    Unlike find, it can be specified at the same time as prune.
 
 expression are:
   -iname string
@@ -79,6 +82,7 @@ func NewWalkerFromArgs(args []string, out, outerr io.Writer) (*Walker, directory
 		prunes:      make(filter.OrExp, 0, defaultMakeLen),
 		out:         out,
 		outerr:      outerr,
+		depth:       -1,
 		targets:     make(directoryInfos, 0, defaultDirecotryBuffer),
 		concurrency: make(chan struct{}, concurrencyMax),
 	}
@@ -164,7 +168,10 @@ func NewWalkerFromArgs(args []string, out, outerr io.Writer) (*Walker, directory
 	}
 
 	roots, remain := getRoots(args[1:])
-	remain = setOption(walker, remain)
+	remain, err := setOption(walker, remain)
+	if err != nil {
+		return nil, nil, err
+	}
 	if err := flag.Parse(remain); err != nil {
 		return nil, nil, err
 	}
@@ -180,7 +187,7 @@ func toFilter(f filter.FileExp, isNot *bool) filter.FileExp {
 	return f
 }
 
-func setOption(walker *Walker, args []string) (remine []string) {
+func setOption(walker *Walker, args []string) (remine []string, err error) {
 	remine = args[:]
 	for len(remine) > 0 && len(remine[0]) > 0 {
 		switch remine[0] {
@@ -188,15 +195,25 @@ func setOption(walker *Walker, args []string) (remine []string) {
 			walker.gitignore = true
 		case "-dry":
 			walker.IsDry = true
+		case "-maxdepth":
+			if len(remine) < 2 {
+				return remine, nil
+			}
+			d, err := strconv.Atoi(args[1])
+			if err != nil {
+				return nil, err
+			}
+			walker.depth = d
+			remine = remine[1:]
 		default:
-			return remine
+			return remine, nil
 		}
 		if len(remine) == 1 {
-			return nil
+			return nil, nil
 		}
 		remine = remine[1:]
 	}
-	return remine
+	return remine, nil
 }
 
 func getRoots(args []string) (roots []*direcotryInfo, remain []string) {

@@ -15,10 +15,12 @@ var tests = []struct {
 	{
 		"fing testdata/jpg_dir testdata/png_dir",
 		[]string{
+			"testdata/jpg_dir",
 			"testdata/jpg_dir/1.jpg",
 			"testdata/jpg_dir/2.jpg",
 			"testdata/jpg_dir/3.jpg",
 			"testdata/jpg_dir/4.JPG",
+			"testdata/png_dir",
 			"testdata/png_dir/1.png",
 			"testdata/png_dir/2.png",
 			"testdata/png_dir/3.png",
@@ -65,6 +67,18 @@ var tests = []struct {
 	{
 		"fing testdata -type f -ipath txt",
 		[]string{},
+	},
+	{
+		"fing testdata -maxdepth 1 -name .gitignore",
+		[]string{
+			"testdata/.gitignore",
+		},
+	},
+	{
+		"fing testdata -maxdepth 0",
+		[]string{
+			"testdata",
+		},
 	},
 	{
 		"fing testdata/jpg_dir testdata/png_dir -dry -I -type f -ipath txt/* -prune -name *.png -or -not -regex .*\\.name",
