@@ -1,6 +1,9 @@
 package walk
 
 import (
+	"bufio"
+	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -200,7 +203,13 @@ func (w *Walker) extractGitignore(root, path string) (ignore *filter.Gitignore, 
 	ignore = &filter.Gitignore{
 		PathMatchers: make([]*filter.Path, 0, defaultIgnoreBuffer),
 	}
-	for _, file := range strings.Split(string(buf), "\n") {
+	reader := bufio.NewReader(bytes.NewReader(buf))
+	for {
+		b, _, err := reader.ReadLine()
+		if errors.Is(err, io.EOF) {
+			break
+		}
+		file := string(b)
 		for len(file) > 2 && file[len(file)-2] == '*' && file[len(file)-1] == '*' {
 			file = file[:len(file)-1]
 		}
