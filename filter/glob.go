@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+	"unicode/utf8"
 )
 
 type matchPattern int
@@ -19,6 +20,8 @@ const (
 type glob struct {
 	pattern string
 	ddlPool sync.Pool
+
+	runeNums int
 
 	matchPattern matchPattern
 	matchIndex   int
@@ -71,15 +74,17 @@ loopend:
 		}
 	}
 	if matchp == globPattern {
+		runeNums := utf8.RuneCountInString(pattern)
 		return &glob{
 			pattern:      pattern,
 			matchPattern: globPattern,
 			ddlPool: sync.Pool{
 				New: func() interface{} {
-					ddl := make([][]bool, 0, len(pattern))
+					ddl := make([][]bool, 0, runeNums)
 					return &ddl
 				},
 			},
+			runeNums: runeNums,
 		}
 	}
 	if matchp == forwardBackwardPattern {
@@ -107,33 +112,37 @@ func (g *glob) match(s string) bool {
 		return strings.Contains(s, g.pattern)
 	}
 
+	str := []rune(s)
 	pool := g.ddlPool.Get().(*[][]bool)
-	ddl := *pool
-	ddl = ddl[:cap(ddl)]
+	dp := *pool
+	dp = dp[:cap(dp)]
 
-	var firstMatch int
-	for i := range g.pattern {
-		if cap(ddl[i]) > 0 {
-			ddl[i] = ddl[i][:0]
-		} else if i > 2 {
-			ddl[i] = ddl[i-2][:0]
+	var (
+		firstMatch int
+		dpIndex    int
+	)
+	for pIndex, r := range g.pattern {
+		if cap(dp[dpIndex]) > 0 {
+			dp[dpIndex] = dp[dpIndex][:0]
+		} else if dpIndex > 2 {
+			dp[dpIndex] = dp[dpIndex-2][:0]
 		} else {
-			ddl[i] = make([]bool, 0, defaultBuf)
+			dp[dpIndex] = make([]bool, 0, defaultBuf)
 		}
 		var match bool
-		switch g.pattern[i] {
+		switch g.pattern[dpIndex] {
 		case '*':
-			if i == len(g.pattern)-1 {
-				*pool = ddl[:0]
+			if dpIndex == len(g.pattern)-1 {
+				*pool = dp[:0]
 				g.ddlPool.Put(pool)
 				return true
 			}
 			for j := 0; j < len(s)-firstMatch; j++ {
-				ddl[i] = append(ddl[i], true)
+				dp[dpIndex] = append(dp[dpIndex], true)
 			}
 		case '?':
-			for arrayj, strj := 0, firstMatch; strj < len(s); arrayj, strj = arrayj+1, strj+1 {
-				m := (i == 0 && arrayj == 0) || (i != 0 && arrayj != 0 && ddl[i-1][arrayj-1])
+			for arrayj, strj := 0, firstMatch; strj < len(str); arrayj, strj = arrayj+1, strj+1 {
+				m := (dpIndex == 0 && arrayj == 0) || (dpIndex != 0 && arrayj != 0 && dp[dpIndex-1][arrayj-1])
 				if !match {
 					if !m {
 						continue
@@ -141,19 +150,19 @@ func (g *glob) match(s string) bool {
 					match = true
 					firstMatch = strj
 				}
-				ddl[i] = append(ddl[i], m)
+				dp[dpIndex] = append(dp[dpIndex], m)
 			}
 		default:
-			if i == 0 {
-				if g.pattern[i] != s[0] {
-					*pool = ddl[:0]
+			if dpIndex == 0 {
+				if r != str[0] {
+					*pool = dp[:0]
 					g.ddlPool.Put(pool)
 					return false
 				}
 			}
-			if i != 0 && g.pattern[i-1] == '*' {
-				for arrayj, strj := 0, firstMatch; strj < len(s); arrayj, strj = arrayj+1, strj+1 {
-					m := (i == 0 || ddl[i-1][arrayj]) && g.pattern[i] == s[strj]
+			if dpIndex != 0 && g.pattern[pIndex-1] == '*' {
+				for arrayj, strj := 0, firstMatch; strj < len(str); arrayj, strj = arrayj+1, strj+1 {
+					m := (dpIndex == 0 || dp[dpIndex-1][arrayj]) && r == str[strj]
 					if !match {
 						if !m {
 							continue
@@ -161,15 +170,15 @@ func (g *glob) match(s string) bool {
 						match = true
 						firstMatch = strj
 					}
-					ddl[i] = append(ddl[i], m)
+					dp[dpIndex] = append(dp[dpIndex], m)
 				}
 			} else {
-				for arrayj, strj := 0, firstMatch; strj < len(s); arrayj, strj = arrayj+1, strj+1 {
+				for arrayj, strj := 0, firstMatch; strj < len(str); arrayj, strj = arrayj+1, strj+1 {
 					var m bool
-					if i == 0 {
-						m = arrayj == 0 && g.pattern[i] == s[strj]
+					if dpIndex == 0 {
+						m = arrayj == 0 && r == str[strj]
 					} else {
-						m = arrayj != 0 && ddl[i-1][arrayj-1] && g.pattern[i] == s[strj]
+						m = arrayj != 0 && dp[dpIndex-1][arrayj-1] && r == str[strj]
 					}
 					if !match {
 						if !m {
@@ -178,19 +187,20 @@ func (g *glob) match(s string) bool {
 						match = true
 						firstMatch = strj
 					}
-					ddl[i] = append(ddl[i], m)
+					dp[dpIndex] = append(dp[dpIndex], m)
 				}
 			}
-			if len(ddl[i]) == 0 {
-				*pool = ddl[:0]
+			if len(dp[dpIndex]) == 0 {
+				*pool = dp[:0]
 				g.ddlPool.Put(pool)
 				return false
 			}
 		}
+		dpIndex++
 	}
-	*pool = ddl[:0]
+	*pool = dp[:0]
 	g.ddlPool.Put(pool)
-	return len(ddl[len(g.pattern)-1])+firstMatch == len(s) && ddl[len(g.pattern)-1][len(ddl[len(g.pattern)-1])-1]
+	return len(dp[g.runeNums-1])+firstMatch == len(str) && dp[g.runeNums-1][len(dp[g.runeNums-1])-1]
 }
 
 func (g *glob) String() string {

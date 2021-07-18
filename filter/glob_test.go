@@ -10,8 +10,8 @@ import (
 const globText = "baaabab"
 
 var globTestPattern = []struct {
-	patttern string
-	match    bool
+	pattern string
+	match   bool
 }{
 	// match pattern
 	{"baaabab", true},
@@ -48,10 +48,34 @@ func TestGlob_Match(t *testing.T) {
 	t.Parallel()
 	for _, tt := range globTestPattern {
 		tt := tt
-		t.Run(tt.patttern, func(t *testing.T) {
+		t.Run(tt.pattern, func(t *testing.T) {
 			t.Parallel()
-			matcher := filter.NewGlob(tt.patttern)
+			matcher := filter.NewGlob(tt.pattern)
 			if match := filter.GlobMatch(matcher, globText); match != tt.match {
+				t.Errorf("Match want %t, but got %t ", tt.match, match)
+			}
+		})
+	}
+}
+
+func TestGlob_MatchMultiByte(t *testing.T) {
+	t.Parallel()
+	const pattern = "Hello 世界"
+	for _, tt := range []struct {
+		pattern string
+		match   bool
+	}{
+		{"*世界", true},
+		{"*世界*", true},
+		{"Hello*", true},
+		{"Hello**世界", true},
+		{"Hello", false},
+	} {
+		tt := tt
+		t.Run(tt.pattern, func(t *testing.T) {
+			t.Parallel()
+			matcher := filter.NewGlob(tt.pattern)
+			if match := filter.GlobMatch(matcher, pattern); match != tt.match {
 				t.Errorf("Match want %t, but got %t ", tt.match, match)
 			}
 		})
