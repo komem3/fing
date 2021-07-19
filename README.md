@@ -6,7 +6,7 @@ It doesn't cover all of find's rich options, but fing provides a similar interfa
 ## Why fing
 
 The `find` command supports a rich of useful options, but it is very slow.
-On the other hand, [`fd`](https://github.com/sharkdp/fd) can search very fast, but it is very different from how to use find.
+On the other hand, [fd](https://github.com/sharkdp/fd) can search very fast, but it is very different from how to use find.
 
 So I created fing with the goal of creating a fast `find` command with an interface similar to `find`.
 If you want a fast `find` command, fing is a good choice.
