@@ -199,7 +199,7 @@ func setOption(walker *Walker, args []string) (remine []string, err error) {
 			if len(remine) < 2 {
 				return remine, nil
 			}
-			d, err := strconv.Atoi(args[1])
+			d, err := strconv.Atoi(remine[1])
 			if err != nil {
 				return nil, err
 			}

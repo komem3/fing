@@ -102,6 +102,9 @@ func (w *Walker) String() string {
 	if w.gitignore {
 		s.WriteString("ignore=true ")
 	}
+	if w.depth != -1 {
+		fmt.Fprintf(&s, "maxdepth=%d ", w.depth)
+	}
 	if len(w.prunes) > 0 {
 		fmt.Fprintf(&s, "prunes=[%s] ", w.prunes)
 	}
