@@ -57,6 +57,7 @@ expression are:
   -not
     True if next expression false.
   -or
+  -o
     Evaluate the previous and next expressions with or.
   -path string
     Search for files using wildcard expressions.
@@ -165,6 +166,12 @@ func NewWalkerFromArgs(args []string, out, outerr io.Writer) (*Walker, directory
 				exp = make(filter.AndExp, 0, defaultMakeLen)
 			}
 		}), "or", "")
+		flag.Var(boolFunc(func(b bool) {
+			if b {
+				walker.matcher = append(walker.matcher, exp)
+				exp = make(filter.AndExp, 0, defaultMakeLen)
+			}
+		}), "o", "")
 	}
 
 	roots, remain := getRoots(args[1:])
