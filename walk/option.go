@@ -160,18 +160,14 @@ func NewWalkerFromArgs(args []string, out, outerr io.Writer) (*Walker, directory
 				walker.matcher = walker.matcher[:0]
 			}
 		}), "prune", "")
-		flag.Var(boolFunc(func(b bool) {
+		orFunc := boolFunc(func(b bool) {
 			if b {
 				walker.matcher = append(walker.matcher, exp)
 				exp = make(filter.AndExp, 0, defaultMakeLen)
 			}
-		}), "or", "")
-		flag.Var(boolFunc(func(b bool) {
-			if b {
-				walker.matcher = append(walker.matcher, exp)
-				exp = make(filter.AndExp, 0, defaultMakeLen)
-			}
-		}), "o", "")
+		})
+		flag.Var(orFunc, "or", "")
+		flag.Var(orFunc, "o", "")
 	}
 
 	roots, remain := getRoots(args[1:])
