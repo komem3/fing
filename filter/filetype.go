@@ -23,8 +23,8 @@ func NewFileType(typ string) (FileType, error) {
 	return 0, fmt.Errorf("%s is invalid file type", typ)
 }
 
-func (f FileType) Match(_ string, info fs.DirEntry) bool {
-	return fs.FileMode(f) == info.Type()
+func (f FileType) Match(_ string, info fs.DirEntry) (bool, error) {
+	return fs.FileMode(f) == info.Type(), nil
 }
 
 func (f FileType) String() string {

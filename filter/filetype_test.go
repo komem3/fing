@@ -63,7 +63,7 @@ func TestFileType_Match(t *testing.T) {
 			if err != nil {
 				return
 			}
-			if match := f.Match("", tt.args.file); match != tt.want.match {
+			if match, _ := f.Match("", tt.args.file); match != tt.want.match {
 				t.Errorf("match want %t, but got %t", tt.want.match, match)
 			}
 		})

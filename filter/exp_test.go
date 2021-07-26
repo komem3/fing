@@ -32,7 +32,11 @@ func TestOrExp_Match(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			if match := tt.filter.Match(path, nil); tt.match != match {
+			match, err := tt.filter.Match(path, nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if tt.match != match {
 				t.Errorf("match want %t, but got %t", tt.match, match)
 			}
 		})
@@ -65,7 +69,11 @@ func TestAndExp_Match(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			if match := tt.filter.Match(path, nil); tt.match != match {
+			match, err := tt.filter.Match(path, nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if tt.match != match {
 				t.Errorf("match want %t, but got %t", tt.match, match)
 			}
 		})
@@ -95,7 +103,11 @@ func TestNotFilter_Match(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			if match := tt.filter.Match(tt.path, nil); tt.match != match {
+			match, err := tt.filter.Match(tt.path, nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if tt.match != match {
 				t.Errorf("match want %t, but got %t", tt.match, match)
 			}
 		})

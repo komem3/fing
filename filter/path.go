@@ -52,12 +52,12 @@ func NewIPath(pattern string) *IPath {
 	}
 }
 
-func (p *Path) Match(path string, _ fs.DirEntry) bool {
-	return p.match(path)
+func (p *Path) Match(path string, _ fs.DirEntry) (bool, error) {
+	return p.match(path), nil
 }
 
-func (p *IPath) Match(path string, _ fs.DirEntry) bool {
-	return p.match(strings.ToUpper(path))
+func (p *IPath) Match(path string, _ fs.DirEntry) (bool, error) {
+	return p.match(strings.ToUpper(path)), nil
 }
 
 func (p *Path) String() string {

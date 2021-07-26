@@ -22,7 +22,7 @@ func TestFileName_Match(t *testing.T) {
 		t.Run(tt.pattern, func(t *testing.T) {
 			t.Parallel()
 			filter := filter.NewFileName(tt.pattern)
-			if match := filter.Match("", fileNameFile); match != tt.match {
+			if match, _ := filter.Match("", fileNameFile); match != tt.match {
 				t.Errorf("match want %t, but got %t", tt.match, match)
 			}
 		})
@@ -43,7 +43,7 @@ func TestIFileName_Match(t *testing.T) {
 		t.Run(tt.pattern, func(t *testing.T) {
 			t.Parallel()
 			filter := filter.NewIFileName(tt.pattern)
-			if match := filter.Match("", fileNameFile); match != tt.match {
+			if match, _ := filter.Match("", fileNameFile); match != tt.match {
 				t.Errorf("match want %t, but got %t", tt.match, match)
 			}
 		})

@@ -25,7 +25,7 @@ func TestRegex_Match(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if match := filter.Match(regexFile, nil); match != tt.match {
+			if match, _ := filter.Match(regexFile, nil); match != tt.match {
 				t.Errorf("match want %t, but got %t", tt.match, match)
 			}
 		})
@@ -49,7 +49,7 @@ func TestIRegex_Match(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if match := filter.Match(regexFile, nil); match != tt.match {
+			if match, _ := filter.Match(regexFile, nil); match != tt.match {
 				t.Errorf("match want %t, but got %t", tt.match, match)
 			}
 		})

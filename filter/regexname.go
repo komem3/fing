@@ -26,8 +26,8 @@ func NewIRegexName(pattern string) (*RegexName, error) {
 	return NewRegexName("(?i)" + pattern)
 }
 
-func (r *RegexName) Match(_ string, info fs.DirEntry) bool {
-	return r.reg.MatchString(info.Name())
+func (r *RegexName) Match(_ string, info fs.DirEntry) (bool, error) {
+	return r.reg.MatchString(info.Name()), nil
 }
 
 func (r *RegexName) String() string {

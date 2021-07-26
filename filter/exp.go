@@ -30,29 +30,41 @@ func NewOrExp(f FileExp) OrExp {
 	return or
 }
 
-func (e OrExp) Match(path string, info fs.DirEntry) bool {
+func (e OrExp) Match(path string, info fs.DirEntry) (bool, error) {
 	if len(e) == 0 {
-		return true
+		return true, nil
 	}
 	for _, filters := range e {
-		if filters.Match(path, info) {
-			return true
+		match, err := filters.Match(path, info)
+		if err != nil {
+			return false, err
+		}
+		if match {
+			return match, nil
 		}
 	}
-	return false
+	return false, nil
 }
 
-func (e AndExp) Match(path string, info fs.DirEntry) bool {
+func (e AndExp) Match(path string, info fs.DirEntry) (bool, error) {
 	for _, filters := range e {
-		if !filters.Match(path, info) {
-			return false
+		match, err := filters.Match(path, info)
+		if err != nil {
+			return false, err
+		}
+		if !match {
+			return false, nil
 		}
 	}
-	return true
+	return true, nil
 }
 
-func (n *NotExp) Match(path string, info fs.DirEntry) bool {
-	return !n.filter.Match(path, info)
+func (n *NotExp) Match(path string, info fs.DirEntry) (bool, error) {
+	match, err := n.filter.Match(path, info)
+	if err != nil {
+		return false, err
+	}
+	return !match, nil
 }
 
 func (e OrExp) String() string {

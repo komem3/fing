@@ -25,7 +25,7 @@ func TestRegexName_Match(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if match := filter.Match("", regexNameFile); match != tt.match {
+			if match, _ := filter.Match("", regexNameFile); match != tt.match {
 				t.Errorf("match want %t, but got %t", tt.match, match)
 			}
 		})
@@ -49,7 +49,7 @@ func TestIRegexName_Match(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if match := filter.Match("", regexNameFile); match != tt.match {
+			if match, _ := filter.Match("", regexNameFile); match != tt.match {
 				t.Errorf("match want %t, but got %t", tt.match, match)
 			}
 		})
