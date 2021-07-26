@@ -35,9 +35,11 @@ Fing is A fast file finder that provides an interface similar to find.
 flags are:
   -I
     Ignore files in .gitignore.
+    This is a fing specific option.
   -dry
     Only output parse result of expression.
     If this option is specified, the file will not be searched.
+    This is a fing specific option.
   -maxdepth
     The depth to search.
     Unlike find, it can be specified at the same time as prune.
@@ -51,6 +53,7 @@ expression are:
     Like -regex, but the match is case insensitive.
   -irname string
     Like -rname, but the match is case insensitive.
+    This is a fing specific option.
   -name string
     Search for files using wildcard expressions.
     This option match only to file name.
@@ -72,6 +75,7 @@ expression are:
     Search for files using regular expressions.
     This option match only to file name..
     Unlike regex option, this option is exact match.
+    This is a fing specific option.
   -type string
     File is type.
     Support file(f), directory(d), named piep(p) and socket(s).
