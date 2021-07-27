@@ -13,14 +13,12 @@ var tests = []struct {
 	output  []string
 }{
 	{
-		"fing testdata/jpg_dir testdata/png_dir",
+		"fing testdata/jpg_dir testdata/png_dir -empty",
 		[]string{
-			"testdata/jpg_dir",
 			"testdata/jpg_dir/1.jpg",
 			"testdata/jpg_dir/2.jpg",
 			"testdata/jpg_dir/3.jpg",
 			"testdata/jpg_dir/4.JPG",
-			"testdata/png_dir",
 			"testdata/png_dir/1.png",
 			"testdata/png_dir/2.png",
 			"testdata/png_dir/3.png",
@@ -86,6 +84,17 @@ var tests = []struct {
 			"targets=[testdata/jpg_dir, testdata/png_dir] " +
 				"ignore=true prunes=[type(file) * ipath(TXT/*)] " +
 				"condition=[name(*.png) + not regex(^.*\\.name$)]",
+		},
+	},
+	{
+		"fing testdata -size +1k",
+		[]string{
+			"testdata",
+			"testdata/txt_dir",
+			"testdata/.hidden",
+			"testdata/link",
+			"testdata/png_dir",
+			"testdata/jpg_dir",
 		},
 	},
 }

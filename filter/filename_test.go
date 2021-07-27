@@ -6,7 +6,7 @@ import (
 	"github.com/komem3/fing/filter"
 )
 
-var fileNameFile = filter.NewMockDriEntry("index.ts", false, 0, nil)
+var fileNameFile = &mockDirFileInfo{name: "index.ts"}
 
 func TestFileName_Match(t *testing.T) {
 	t.Parallel()

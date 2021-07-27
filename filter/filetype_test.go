@@ -30,27 +30,27 @@ func TestFileType_Match(t *testing.T) {
 		},
 		{
 			"match regular file",
-			args{filter.NewMockDriEntry("mock.go", false, 0, nil), "f"},
+			args{&mockDirFileInfo{typ: 0}, "f"},
 			want{true, false},
 		},
 		{
 			"match directory",
-			args{filter.NewMockDriEntry("mock/", true, fs.ModeDir, nil), "d"},
+			args{&mockDirFileInfo{typ: fs.ModeDir}, "d"},
 			want{true, false},
 		},
 		{
 			"match pipe",
-			args{filter.NewMockDriEntry("pipe", false, fs.ModeNamedPipe, nil), "p"},
+			args{&mockDirFileInfo{typ: fs.ModeNamedPipe}, "p"},
 			want{true, false},
 		},
 		{
 			"match socket",
-			args{filter.NewMockDriEntry("socket", false, fs.ModeSocket, nil), "s"},
+			args{&mockDirFileInfo{typ: fs.ModeSocket}, "s"},
 			want{true, false},
 		},
 		{
 			"mismatch directory",
-			args{filter.NewMockDriEntry("mock/", true, fs.ModeDir, nil), "f"},
+			args{&mockDirFileInfo{typ: fs.ModeDir}, "f"},
 			want{false, false},
 		},
 	} {

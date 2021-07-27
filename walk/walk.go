@@ -141,12 +141,17 @@ func (w *Walker) walk(root string, gitignores *filter.Gitignore) {
 
 func (w *Walker) walkFile(path string, info fs.DirEntry, ignores *filter.Gitignore) {
 	if ignores != nil {
-		if ignores.Match(path, info) {
+		if match, _ := ignores.Match(path, info); match {
 			return
 		}
 	}
 	if info.IsDir() {
-		if len(w.prunes) > 0 && w.prunes.Match(path, info) {
+		match, err := w.prunes.Match(path, info)
+		if err != nil {
+			w.writeError(err)
+			return
+		}
+		if len(w.prunes) > 0 && match {
 			return
 		}
 		w.dirMux.Lock()
@@ -157,7 +162,12 @@ func (w *Walker) walkFile(path string, info fs.DirEntry, ignores *filter.Gitigno
 		}
 		w.dirMux.Unlock()
 	}
-	if w.matcher.Match(path, info) {
+	match, err := w.matcher.Match(path, info)
+	if err != nil {
+		w.writeError(err)
+		return
+	}
+	if match {
 		w.writeFile(path, info)
 	}
 }

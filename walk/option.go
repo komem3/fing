@@ -45,6 +45,9 @@ flags are:
     Unlike find, it can be specified at the same time as prune.
 
 expression are:
+  -empty
+    Search emptry file and directory.
+    This is shothand of '-size 0c'.
   -iname string
     Like -name, but the match is case insensitive.
   -ipath string
@@ -76,6 +79,9 @@ expression are:
     This option match only to file name..
     Unlike regex option, this option is exact match.
     This is a fing specific option.
+  -size [+|-]n[ckMG]
+    The size of file. Should specify the unit of size.
+    c(for bytes), k(for KiB), M(for MiB), G(for Gib).
   -type string
     File is type.
     Support file(f), directory(d), named piep(p) and socket(s).
@@ -156,6 +162,23 @@ func NewWalkerFromArgs(args []string, out, outerr io.Writer) (*Walker, directory
 			exp = append(exp, toFilter(f, &isNot))
 			return nil
 		})
+		flag.Func("size", "", func(s string) error {
+			f, err := filter.NewSize(s)
+			if err != nil {
+				return err
+			}
+			exp = append(exp, toFilter(f, &isNot))
+			return nil
+		})
+		flag.Var(boolFunc(func(b bool) {
+			if b {
+				f, err := filter.NewSize("0c")
+				if err != nil {
+					panic(err)
+				}
+				exp = append(exp, toFilter(f, &isNot))
+			}
+		}), "empty", "")
 		flag.Var(boolFunc(func(b bool) {
 			if b {
 				walker.matcher = append(walker.matcher, exp)

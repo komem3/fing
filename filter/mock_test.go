@@ -1,32 +1,52 @@
-package filter
+package filter_test
 
-import "io/fs"
+import (
+	"io/fs"
+	"time"
+)
 
-type mockDirEntry struct {
-	name  string
-	isDir bool
-	typ   fs.FileMode
-	info  fs.FileInfo
+type mockDirFileInfo struct {
+	name    string
+	isDir   bool
+	typ     fs.FileMode
+	size    int64
+	modTime time.Time
+	sys     interface{}
 }
 
-func NewMockDriEntry(name string, isdir bool, typ fs.FileMode, info fs.FileInfo) fs.DirEntry {
-	return &mockDirEntry{name, isdir, typ, info}
-}
+var (
+	_ fs.DirEntry = (*mockDirFileInfo)(nil)
+	_ fs.FileInfo = (*mockDirFileInfo)(nil)
+)
 
-var _ fs.DirEntry = (*mockDirEntry)(nil)
-
-func (m *mockDirEntry) Name() string {
+func (m *mockDirFileInfo) Name() string {
 	return m.name
 }
 
-func (m *mockDirEntry) IsDir() bool {
+func (m *mockDirFileInfo) IsDir() bool {
 	return m.isDir
 }
 
-func (m *mockDirEntry) Type() fs.FileMode {
+func (m *mockDirFileInfo) Type() fs.FileMode {
 	return m.typ
 }
 
-func (m *mockDirEntry) Info() (fs.FileInfo, error) {
-	return m.info, nil
+func (m *mockDirFileInfo) Mode() fs.FileMode {
+	return m.typ
+}
+
+func (m *mockDirFileInfo) Info() (fs.FileInfo, error) {
+	return m, nil
+}
+
+func (m *mockDirFileInfo) Size() int64 {
+	return m.size
+}
+
+func (m *mockDirFileInfo) ModTime() time.Time {
+	return m.modTime
+}
+
+func (m *mockDirFileInfo) Sys() interface{} {
+	return m.sys
 }
