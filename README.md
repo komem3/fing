@@ -38,9 +38,11 @@ Fing is A fast file finder that provides an interface similar to find.
 flags are:
   -I
     Ignore files in .gitignore.
+    This is a fing specific option.
   -dry
     Only output parse result of expression.
     If this option is specified, the file will not be searched.
+    This is a fing specific option.
   -maxdepth
     The depth to search.
     Unlike find, it can be specified at the same time as prune.
@@ -54,12 +56,14 @@ expression are:
     Like -regex, but the match is case insensitive.
   -irname string
     Like -rname, but the match is case insensitive.
+    This is a fing specific option.
   -name string
     Search for files using wildcard expressions.
     This option match only to file name.
   -not
     True if next expression false.
   -or
+  -o
     Evaluate the previous and next expressions with or.
   -path string
     Search for files using wildcard expressions.
@@ -69,11 +73,15 @@ expression are:
   -regex string
     Search for files using regular expressions.
     This option match to file path.
-    Like find, this is exact match.
+    Unlike find, this is a backward match.
   -rname string
     Search for files using regular expressions.
-    This option match only to file name.
-    Like name and regex option, this option is exact match.
+    This option match only to file name..
+    Unlike regex option, this option is exact match.
+    This is a fing specific option.
+  -size [+|-]n[ckMG]
+    The size of file. Should specify the unit of size.
+    c(for bytes), k(for KiB), M(for MiB), G(for Gib).
   -type string
     File is type.
     Support file(f), directory(d), named piep(p) and socket(s).
@@ -94,7 +102,7 @@ fing ./testdata -name "*.jpg"
 fing ./testdata -I -name ".*" -prune -not -name ".*" -irname ".*txt.*"
 ```
 
-- Each operator is and expression, but you can also specify or expression.
+- Each operator is AND expression, but you can also specify OR expression.
 
 ```bash
 fing ./testdata -name "*.jpg" -or -name "*.png"
