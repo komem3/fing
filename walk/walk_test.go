@@ -32,13 +32,13 @@ var extactTests = []struct {
 		&filter.Gitignore{
 			PathMatchers: []*filter.Path{
 				filter.NewPath("*/node_modules"),
-				filter.NewPath(tmpDir + "/node_modules"),
-				filter.NewPath(tmpDir + "/vendor"),
+				filter.NewPath(filepath.Join(tmpDir, "/node_modules")),
+				filter.NewPath(filepath.Join(tmpDir, "/vendor")),
 				filter.NewPath("*.jpg"),
 				filter.NewNotPath("*.txt"),
 				filter.NewNotPath("*/sample.png"),
-				filter.NewNotPath(tmpDir + "/sample.png"),
-				filter.NewNotPath(tmpDir + "/root.png"),
+				filter.NewNotPath(filepath.Join(tmpDir, "/sample.png")),
+				filter.NewNotPath(filepath.Join(tmpDir, "/root.png")),
 			},
 		},
 	},
