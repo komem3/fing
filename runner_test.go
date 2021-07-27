@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"path/filepath"
 	"reflect"
 	"sort"
 	"strings"
@@ -13,53 +14,53 @@ var tests = []struct {
 	output  []string
 }{
 	{
-		"fing testdata/jpg_dir testdata/png_dir -empty",
+		"fing testdata/jpg_dir testdata/png_dir -empty -type f",
 		[]string{
-			"testdata/jpg_dir/1.jpg",
-			"testdata/jpg_dir/2.jpg",
-			"testdata/jpg_dir/3.jpg",
-			"testdata/jpg_dir/4.JPG",
-			"testdata/png_dir/1.png",
-			"testdata/png_dir/2.png",
-			"testdata/png_dir/3.png",
+			filepath.FromSlash("testdata/jpg_dir/1.jpg"),
+			filepath.FromSlash("testdata/jpg_dir/2.jpg"),
+			filepath.FromSlash("testdata/jpg_dir/3.jpg"),
+			filepath.FromSlash("testdata/jpg_dir/4.JPG"),
+			filepath.FromSlash("testdata/png_dir/1.png"),
+			filepath.FromSlash("testdata/png_dir/2.png"),
+			filepath.FromSlash("testdata/png_dir/3.png"),
 		},
 	},
 	{
 		"fing testdata -I -type f -not -name .*",
 		[]string{
-			"testdata/txt_dir/1.txt",
-			"testdata/txt_dir/2.txt",
+			filepath.FromSlash("testdata/txt_dir/1.txt"),
+			filepath.FromSlash("testdata/txt_dir/2.txt"),
 		},
 	},
 	{
 		"fing testdata -iname *.jpg -regex .*(3|4).*",
 		[]string{
-			"testdata/jpg_dir/3.jpg",
-			"testdata/jpg_dir/4.JPG",
+			filepath.FromSlash("testdata/jpg_dir/3.jpg"),
+			filepath.FromSlash("testdata/jpg_dir/4.JPG"),
 		},
 	},
 	{
 		"fing testdata -name .* -prune -path */link/* -or -name *.txt",
 		[]string{
-			"testdata/link/1.ln",
-			"testdata/link/2.ln",
-			"testdata/txt_dir/1.txt",
-			"testdata/txt_dir/2.txt",
+			filepath.FromSlash("testdata/link/1.ln"),
+			filepath.FromSlash("testdata/link/2.ln"),
+			filepath.FromSlash("testdata/txt_dir/1.txt"),
+			filepath.FromSlash("testdata/txt_dir/2.txt"),
 		},
 	},
 	{
 		"fing testdata -not -name .* -prune -not -type f",
 		[]string{
-			"testdata/.hidden",
+			filepath.FromSlash("testdata/.hidden"),
 		},
 	},
 	{
 		"fing testdata -name jpg* -or -name png* -prune -irname (1|2).*",
 		[]string{
-			"testdata/link/1.ln",
-			"testdata/link/2.ln",
-			"testdata/txt_dir/1.txt",
-			"testdata/txt_dir/2.txt",
+			filepath.FromSlash("testdata/link/1.ln"),
+			filepath.FromSlash("testdata/link/2.ln"),
+			filepath.FromSlash("testdata/txt_dir/1.txt"),
+			filepath.FromSlash("testdata/txt_dir/2.txt"),
 		},
 	},
 	{
@@ -69,7 +70,7 @@ var tests = []struct {
 	{
 		"fing testdata -maxdepth 1 -name .gitignore",
 		[]string{
-			"testdata/.gitignore",
+			filepath.FromSlash("testdata/.gitignore"),
 		},
 	},
 	{
@@ -82,19 +83,17 @@ var tests = []struct {
 		"fing testdata/jpg_dir testdata/png_dir -dry -I -type f -ipath txt/* -prune -name *.png -or -not -regex .*\\.name",
 		[]string{
 			"targets=[testdata/jpg_dir, testdata/png_dir] " +
-				"ignore=true prunes=[type(file) * ipath(TXT/*)] " +
+				filepath.FromSlash("ignore=true prunes=[type(file) * ipath(TXT/*)] ") +
 				"condition=[name(*.png) + not regex(^.*\\.name$)]",
 		},
 	},
 	{
-		"fing testdata -size +1k",
+		"fing testdata -size +0c -type f",
 		[]string{
-			"testdata",
-			"testdata/txt_dir",
-			"testdata/.hidden",
-			"testdata/link",
-			"testdata/png_dir",
-			"testdata/jpg_dir",
+			filepath.FromSlash("testdata/.gitignore"),
+			filepath.FromSlash("testdata/txt_dir/.gitignore"),
+			filepath.FromSlash("testdata/txt_dir/1.txt"),
+			filepath.FromSlash("testdata/txt_dir/2.txt"),
 		},
 	},
 }
