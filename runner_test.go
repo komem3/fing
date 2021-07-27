@@ -14,7 +14,7 @@ var tests = []struct {
 	output  []string
 }{
 	{
-		"fing testdata/jpg_dir testdata/png_dir -empty",
+		"fing testdata/jpg_dir testdata/png_dir -empty -type f",
 		[]string{
 			filepath.FromSlash("testdata/jpg_dir/1.jpg"),
 			filepath.FromSlash("testdata/jpg_dir/2.jpg"),
@@ -82,7 +82,7 @@ var tests = []struct {
 	{
 		"fing testdata/jpg_dir testdata/png_dir -dry -I -type f -ipath txt/* -prune -name *.png -or -not -regex .*\\.name",
 		[]string{
-			filepath.FromSlash("targets=[testdata/jpg_dir, testdata/png_dir] ") +
+			"targets=[testdata/jpg_dir, testdata/png_dir] " +
 				filepath.FromSlash("ignore=true prunes=[type(file) * ipath(TXT/*)] ") +
 				"condition=[name(*.png) + not regex(^.*\\.name$)]",
 		},
