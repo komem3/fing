@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strconv"
 
 	"github.com/komem3/fing/filter"
@@ -115,15 +116,15 @@ func NewWalkerFromArgs(args []string, out, outerr io.Writer) (*Walker, directory
 			return nil
 		})
 		flag.Func("path", "", func(s string) error {
-			exp = append(exp, toFilter(filter.NewPath(s), &isNot))
+			exp = append(exp, toFilter(filter.NewPath(filepath.FromSlash(s)), &isNot))
 			return nil
 		})
 		flag.Func("ipath", "", func(s string) error {
-			exp = append(exp, toFilter(filter.NewIPath(s), &isNot))
+			exp = append(exp, toFilter(filter.NewIPath(filepath.FromSlash(s)), &isNot))
 			return nil
 		})
 		flag.Func("regex", "", func(s string) error {
-			f, err := filter.NewRegex(s)
+			f, err := filter.NewRegex(filepath.FromSlash(s))
 			if err != nil {
 				return err
 			}
@@ -131,7 +132,7 @@ func NewWalkerFromArgs(args []string, out, outerr io.Writer) (*Walker, directory
 			return nil
 		})
 		flag.Func("iregex", "", func(s string) error {
-			f, err := filter.NewIRegex(s)
+			f, err := filter.NewIRegex(filepath.FromSlash(s))
 			if err != nil {
 				return err
 			}
