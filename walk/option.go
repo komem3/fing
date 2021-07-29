@@ -36,11 +36,9 @@ Fing is A fast file finder that provides an interface similar to find.
 flags are:
   -I
     Ignore files in .gitignore.
-    This is a fing specific option.
   -dry
     Only output parse result of expression.
     If this option is specified, the file will not be searched.
-    This is a fing specific option.
   -maxdepth
     The depth to search.
     Unlike find, it can be specified at the same time as prune.
@@ -57,29 +55,25 @@ expression are:
     Like -regex, but the match is case insensitive.
   -irname string
     Like -rname, but the match is case insensitive.
-    This is a fing specific option.
   -name string
-    Search for files using wildcard expressions.
+    Search for files using glob expressions.
     This option match only to file name.
   -not
     True if next expression false.
-  -or
   -o
     Evaluate the previous and next expressions with or.
   -path string
     Search for files using wildcard expressions.
     This option match to file path.
+    Unlike find, This option explicitly matched by using one or more <slash>.
   -prune
     Prunes directory that match before expressions.
   -regex string
     Search for files using regular expressions.
     This option match to file path.
-    Unlike find, this is a backward match.
   -rname string
     Search for files using regular expressions.
-    This option match only to file name..
-    Unlike regex option, this option is exact match.
-    This is a fing specific option.
+    This option match only to file name.
   -size [+|-]n[ckMG]
     The size of file. Should specify the unit of size.
     c(for bytes), k(for KiB), M(for MiB), G(for Gib).
@@ -188,14 +182,12 @@ func NewWalkerFromArgs(args []string, out, outerr io.Writer) (*Walker, directory
 				walker.matcher = walker.matcher[:0]
 			}
 		}), "prune", "")
-		orFunc := boolFunc(func(b bool) {
+		flag.Var(boolFunc(func(b bool) {
 			if b {
 				walker.matcher = append(walker.matcher, exp)
 				exp = make(filter.AndExp, 0, defaultMakeLen)
 			}
-		})
-		flag.Var(orFunc, "or", "")
-		flag.Var(orFunc, "o", "")
+		}), "o", "")
 	}
 
 	roots, remain := getRoots(args[1:])

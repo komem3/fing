@@ -62,7 +62,6 @@ expression are:
     This option match only to file name.
   -not
     True if next expression false.
-  -or
   -o
     Evaluate the previous and next expressions with or.
   -path string
