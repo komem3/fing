@@ -40,7 +40,7 @@ var tests = []struct {
 		},
 	},
 	{
-		"fing testdata -name .* -prune -path */link/* -or -name *.txt",
+		"fing testdata -name .* -prune -path */link/* -o -name *.txt",
 		[]string{
 			filepath.FromSlash("testdata/link/1.ln"),
 			filepath.FromSlash("testdata/link/2.ln"),
@@ -55,7 +55,7 @@ var tests = []struct {
 		},
 	},
 	{
-		"fing testdata -name jpg* -or -name png* -prune -irname (1|2).*",
+		"fing testdata -name jpg* -o -name png* -prune -irname (1|2).*",
 		[]string{
 			filepath.FromSlash("testdata/link/1.ln"),
 			filepath.FromSlash("testdata/link/2.ln"),
@@ -80,7 +80,7 @@ var tests = []struct {
 		},
 	},
 	{
-		"fing testdata/jpg_dir testdata/png_dir -dry -I -type f -ipath txt/* -prune -name *.png -or -not -regex .*\\.name",
+		"fing testdata/jpg_dir testdata/png_dir -dry -I -type f -ipath txt/* -prune -name *.png -o -not -regex .*\\.name",
 		[]string{
 			"targets=[testdata/jpg_dir, testdata/png_dir] " +
 				filepath.FromSlash("ignore=true prunes=[type(file) * ipath(TXT/*)] ") +

@@ -104,7 +104,7 @@ fing ./testdata -I -name ".*" -prune -not -name ".*" -irname ".*txt.*"
 - Each operator is AND expression, but you can also specify OR expression.
 
 ```bash
-fing ./testdata -name "*.jpg" -or -name "*.png"
+fing ./testdata -name "*.jpg" -o -name "*.png"
 ```
 
 - Debug option `-dry`. You can see how fing evaluated the expression.
