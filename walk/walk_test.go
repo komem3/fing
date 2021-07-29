@@ -8,6 +8,7 @@ import (
 	"testing"
 	"testing/fstest"
 
+	"github.com/go-git/go-git/v5/plumbing/format/gitignore"
 	"github.com/komem3/fing/filter"
 )
 
@@ -30,15 +31,13 @@ var extactTests = []struct {
 			"!/root.png",
 		},
 		&filter.Gitignore{
-			PathMatchers: []*filter.Path{
-				filter.NewPath(filepath.FromSlash("*/node_modules")),
-				filter.NewPath(filepath.Join(tmpDir, "/node_modules")),
-				filter.NewPath(filepath.Join(tmpDir, "/vendor")),
-				filter.NewPath("*.jpg"),
-				filter.NewNotPath("*.txt"),
-				filter.NewNotPath(filepath.FromSlash("*/sample.png")),
-				filter.NewNotPath(filepath.Join(tmpDir, "/sample.png")),
-				filter.NewNotPath(filepath.Join(tmpDir, "/root.png")),
+			PathMatchers: []gitignore.Pattern{
+				gitignore.ParsePattern(filepath.Join(tmpDir, "node_modules/**"), nil),
+				gitignore.ParsePattern(filepath.Join(tmpDir, "vendor"), nil),
+				gitignore.ParsePattern("*.jpg", nil),
+				gitignore.ParsePattern("!*.txt", nil),
+				gitignore.ParsePattern("!sample.png", nil),
+				gitignore.ParsePattern("!"+filepath.Join(tmpDir, "root.png"), nil),
 			},
 		},
 	},
@@ -46,7 +45,7 @@ var extactTests = []struct {
 		"empty file",
 		[]string{},
 		&filter.Gitignore{
-			PathMatchers: make([]*filter.Path, 0, defaultIgnoreBuffer),
+			PathMatchers: make([]gitignore.Pattern, 0, defaultIgnoreBuffer),
 		},
 	},
 }

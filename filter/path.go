@@ -3,67 +3,40 @@ package filter
 import (
 	"fmt"
 	"io/fs"
+	"path/filepath"
 	"strings"
 )
 
 type (
-	Path struct {
-		*glob
-		pathType pathType
-
-		fmt.Stringer
-	}
-	IPath struct {
-		*glob
-		pathType pathType
-	}
-)
-
-type pathType int
-
-const (
-	mismatchPathType pathType = iota - 1
-	normalPathType
-	notPathType
+	Path  string
+	IPath string
 )
 
 var (
-	_ FileExp = (*Path)(nil)
-	_ FileExp = (*IPath)(nil)
+	_ FileExp = Path("")
+	_ FileExp = IPath("")
 )
 
-func NewPath(pattern string) *Path {
-	return &Path{
-		glob:     newGlob(pattern),
-		pathType: normalPathType,
-	}
+func NewPath(pattern string) Path {
+	return Path(pattern)
 }
 
-func NewNotPath(pattern string) *Path {
-	return &Path{
-		glob:     newGlob(pattern),
-		pathType: notPathType,
-	}
+func NewIPath(pattern string) IPath {
+	return IPath(strings.ToUpper(pattern))
 }
 
-func NewIPath(pattern string) *IPath {
-	return &IPath{
-		glob: newGlob(strings.ToUpper(pattern)),
-	}
+func (p Path) Match(path string, _ fs.DirEntry) (bool, error) {
+	return filepath.Match(string(p), path)
 }
 
-func (p *Path) Match(path string, _ fs.DirEntry) (bool, error) {
-	return p.match(path), nil
+func (p IPath) Match(path string, _ fs.DirEntry) (bool, error) {
+	return filepath.Match(string(p), strings.ToUpper(path))
 }
 
-func (p *IPath) Match(path string, _ fs.DirEntry) (bool, error) {
-	return p.match(strings.ToUpper(path)), nil
+func (p Path) String() string {
+	return fmt.Sprintf("path(%s)", string(p))
 }
 
-func (p *Path) String() string {
-	return fmt.Sprintf("path(%s)", p.glob)
-}
-
-func (p *IPath) String() string {
-	return fmt.Sprintf("ipath(%s)", p.glob)
+func (p IPath) String() string {
+	return fmt.Sprintf("ipath(%s)", string(p))
 }

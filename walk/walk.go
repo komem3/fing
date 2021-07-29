@@ -14,6 +14,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/go-git/go-git/v5/plumbing/format/gitignore"
 	"github.com/komem3/fing/filter"
 )
 
@@ -214,7 +215,7 @@ func (w *Walker) extractGitignore(root, path string) (ignore *filter.Gitignore, 
 		return nil, err
 	}
 	ignore = &filter.Gitignore{
-		PathMatchers: make([]*filter.Path, 0, defaultIgnoreBuffer),
+		PathMatchers: make([]gitignore.Pattern, 0, defaultIgnoreBuffer),
 	}
 	reader := bufio.NewReader(bytes.NewReader(buf))
 	for {
@@ -222,40 +223,22 @@ func (w *Walker) extractGitignore(root, path string) (ignore *filter.Gitignore, 
 		if errors.Is(err, io.EOF) {
 			break
 		}
-		file := string(b)
-		for len(file) > 2 && file[len(file)-2] == '*' && file[len(file)-1] == '*' {
-			file = file[:len(file)-1]
-		}
-		if len(file) > 2 && file[len(file)-2:] == "/*" {
-			file = file[:len(file)-2]
-		}
-		file = strings.TrimRight(file, "/")
-		if len(file) == 0 ||
-			strings.HasPrefix(file, "#") ||
-			(file[0] == '!' && len(file) == 1) ||
-			(file[0] == '/' && len(file) == 1) ||
-			(file[0] == '!' && file[1] == '/' && len(file) == 2) {
+		if len(b) == 0 {
 			continue
 		}
-		if file[0] == '!' {
-			if file[1] == '*' {
-				ignore.PathMatchers = append(ignore.PathMatchers, filter.NewNotPath(file[1:]))
-				continue
+		if b[0] == '#' {
+			continue
+		}
+		str := string(b)
+		if strings.Contains(str, "/") {
+			if str[0] == '!' && len(str) > 1 {
+				ignore.PathMatchers = append(ignore.PathMatchers, gitignore.ParsePattern("!"+filepath.Join(root, str[1:]), nil))
+			} else {
+				ignore.PathMatchers = append(ignore.PathMatchers, gitignore.ParsePattern(filepath.Join(root, str), nil))
 			}
-			if file[1] != '/' {
-				ignore.PathMatchers = append(ignore.PathMatchers, filter.NewNotPath(filepath.Join("*", file[1:])))
-			}
-			ignore.PathMatchers = append(ignore.PathMatchers, filter.NewNotPath(filepath.Join(root, file[1:])))
 			continue
 		}
-		if file[0] == '*' {
-			ignore.PathMatchers = append(ignore.PathMatchers, filter.NewPath(file))
-			continue
-		}
-		if file[0] != '/' {
-			ignore.PathMatchers = append(ignore.PathMatchers, filter.NewPath(filepath.Join("*", file)))
-		}
-		ignore.PathMatchers = append(ignore.PathMatchers, filter.NewPath(filepath.Join(root, file)))
+		ignore.PathMatchers = append(ignore.PathMatchers, gitignore.ParsePattern(str, nil))
 	}
 	return ignore, nil
 }
