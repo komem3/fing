@@ -232,9 +232,9 @@ func (w *Walker) extractGitignore(root, path string) (ignore *filter.Gitignore, 
 		str := string(b)
 		if strings.Contains(str, "/") {
 			if str[0] == '!' && len(str) > 1 {
-				ignore.PathMatchers = append(ignore.PathMatchers, gitignore.ParsePattern("!"+filepath.Join(root, str[1:]), nil))
+				ignore.PathMatchers = append(ignore.PathMatchers, gitignore.ParsePattern("!"+filepath.ToSlash(filepath.Join(root, str[1:])), nil))
 			} else {
-				ignore.PathMatchers = append(ignore.PathMatchers, gitignore.ParsePattern(filepath.Join(root, str), nil))
+				ignore.PathMatchers = append(ignore.PathMatchers, gitignore.ParsePattern(filepath.ToSlash(filepath.Join(root, str)), nil))
 			}
 			continue
 		}

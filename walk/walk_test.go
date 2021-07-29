@@ -32,12 +32,12 @@ var extactTests = []struct {
 		},
 		&filter.Gitignore{
 			PathMatchers: []gitignore.Pattern{
-				gitignore.ParsePattern(filepath.Join(tmpDir, "node_modules/**"), nil),
-				gitignore.ParsePattern(filepath.Join(tmpDir, "vendor"), nil),
+				gitignore.ParsePattern(filepath.ToSlash(filepath.Join(tmpDir, "node_modules/**")), nil),
+				gitignore.ParsePattern(filepath.ToSlash(filepath.Join(tmpDir, "vendor")), nil),
 				gitignore.ParsePattern("*.jpg", nil),
 				gitignore.ParsePattern("!*.txt", nil),
 				gitignore.ParsePattern("!sample.png", nil),
-				gitignore.ParsePattern("!"+filepath.Join(tmpDir, "root.png"), nil),
+				gitignore.ParsePattern("!"+filepath.ToSlash(filepath.Join(tmpDir, "root.png")), nil),
 			},
 		},
 	},

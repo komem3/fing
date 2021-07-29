@@ -1,6 +1,7 @@
 package filter_test
 
 import (
+	"path/filepath"
 	"reflect"
 	"testing"
 
@@ -30,7 +31,7 @@ func TestGitignore_Match(t *testing.T) {
 				gitignore.ParsePattern("node_modules/**", nil),
 				gitignore.ParsePattern("!**/index.js", nil),
 			},
-			"node_modules/sample/index.js",
+			filepath.FromSlash("node_modules/sample/index.js"),
 			false,
 		},
 		{
@@ -40,7 +41,7 @@ func TestGitignore_Match(t *testing.T) {
 				gitignore.ParsePattern("!**/index.js", nil),
 				gitignore.ParsePattern("node_modules/sample/*", nil),
 			},
-			"node_modules/sample/index.js",
+			filepath.FromSlash("node_modules/sample/index.js"),
 			true,
 		},
 	} {
