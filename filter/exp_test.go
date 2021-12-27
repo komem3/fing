@@ -15,12 +15,12 @@ func TestOrExp_Match(t *testing.T) {
 	}{
 		{
 			"match partial",
-			filter.OrExp{filter.NewPath("test.*"), filter.NewPath("*.jpg")},
+			filter.OrExp{mustFileExp(filter.NewPath("test.*")), mustFileExp(filter.NewPath("*.jpg"))},
 			true,
 		},
 		{
 			"mismatch all",
-			filter.OrExp{filter.NewPath("*.png"), filter.NewPath("*.jpg")},
+			filter.OrExp{mustFileExp(filter.NewPath("*.png")), mustFileExp(filter.NewPath("*.jpg"))},
 			false,
 		},
 		{
@@ -52,12 +52,12 @@ func TestAndExp_Match(t *testing.T) {
 	}{
 		{
 			"match all",
-			filter.AndExp{filter.NewPath("test.*"), filter.NewPath("*.txt")},
+			filter.AndExp{mustFileExp(filter.NewPath("test.*")), mustFileExp(filter.NewPath("*.txt"))},
 			true,
 		},
 		{
 			"match partial",
-			filter.AndExp{filter.NewPath("test.*"), filter.NewPath("*.jpg")},
+			filter.AndExp{mustFileExp(filter.NewPath("test.*")), mustFileExp(filter.NewPath("*.jpg"))},
 			false,
 		},
 		{
@@ -90,13 +90,13 @@ func TestNotFilter_Match(t *testing.T) {
 		{
 			"match path",
 			"test.txt",
-			filter.NewNotExp(filter.NewPath("test.txt")),
+			filter.NewNotExp(mustFileExp(filter.NewPath("test.txt"))),
 			false,
 		},
 		{
 			"mismatch path",
 			"test.txt",
-			filter.NewNotExp(filter.NewPath("miss.txt")),
+			filter.NewNotExp(mustFileExp(filter.NewPath("miss.txt"))),
 			true,
 		},
 	} {
@@ -112,4 +112,11 @@ func TestNotFilter_Match(t *testing.T) {
 			}
 		})
 	}
+}
+
+func mustFileExp(exp filter.FileExp, err error) filter.FileExp {
+	if err != nil {
+		panic(err)
+	}
+	return exp
 }

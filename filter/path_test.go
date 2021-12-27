@@ -21,7 +21,10 @@ func TestPath_Match(t *testing.T) {
 		tt := tt
 		t.Run(tt.pattern, func(t *testing.T) {
 			t.Parallel()
-			filter := filter.NewPath(tt.pattern)
+			filter, err := filter.NewPath(tt.pattern)
+			if err != nil {
+				t.Fatal(err)
+			}
 			if match, _ := filter.Match(pathFile, nil); match != tt.match {
 				t.Errorf("match want %t, but got %t", tt.match, match)
 			}
@@ -42,7 +45,10 @@ func TestIPath_Match(t *testing.T) {
 		tt := tt
 		t.Run(tt.pattern, func(t *testing.T) {
 			t.Parallel()
-			filter := filter.NewIPath(tt.pattern)
+			filter, err := filter.NewIPath(tt.pattern)
+			if err != nil {
+				t.Fatal(err)
+			}
 			if match, _ := filter.Match(pathFile, nil); match != tt.match {
 				t.Errorf("match want %t, but got %t", tt.match, match)
 			}

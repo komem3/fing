@@ -3,40 +3,49 @@ package filter
 import (
 	"fmt"
 	"io/fs"
-	"path/filepath"
 	"strings"
+
+	"github.com/komem3/glob"
 )
 
 type (
-	FileName  string
-	IFileName string
+	FileName  struct{ *glob.Glob }
+	IFileName struct{ *glob.Glob }
 )
 
 var (
-	_ FileExp = FileName("")
-	_ FileExp = IFileName("")
+	_ FileExp = (*FileName)(nil)
+	_ FileExp = (*FileName)(nil)
 )
 
-func NewFileName(pattern string) FileName {
-	return FileName(pattern)
+func NewFileName(pattern string) (*FileName, error) {
+	glob, err := glob.Compile(pattern)
+	if err != nil {
+		return nil, err
+	}
+	return &FileName{Glob: glob}, nil
 }
 
-func NewIFileName(pattern string) IFileName {
-	return IFileName(strings.ToUpper(pattern))
+func NewIFileName(pattern string) (*IFileName, error) {
+	glob, err := glob.Compile(strings.ToUpper(pattern))
+	if err != nil {
+		return nil, err
+	}
+	return &IFileName{Glob: glob}, nil
 }
 
 func (f FileName) Match(_ string, info fs.DirEntry) (bool, error) {
-	return filepath.Match(string(f), info.Name())
+	return f.Glob.Match(info.Name()), nil
 }
 
 func (f IFileName) Match(_ string, info fs.DirEntry) (bool, error) {
-	return filepath.Match(string(f), strings.ToUpper(info.Name()))
+	return f.Glob.Match(strings.ToUpper(info.Name())), nil
 }
 
 func (f FileName) String() string {
-	return fmt.Sprintf("name(%s)", string(f))
+	return fmt.Sprintf("name(%s)", f.Glob)
 }
 
 func (f IFileName) String() string {
-	return fmt.Sprintf("iname(%s)", string(f))
+	return fmt.Sprintf("iname(%s)", f.Glob)
 }

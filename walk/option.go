@@ -102,19 +102,35 @@ func NewWalkerFromArgs(args []string, out, outerr io.Writer) (*Walker, directory
 		// expression
 		flag.BoolVar(&isNot, "not", false, "")
 		flag.Func("name", "", func(s string) error {
-			exp = append(exp, toFilter(filter.NewFileName(s), &isNot))
+			f, err := filter.NewFileName(s)
+			if err != nil {
+				return err
+			}
+			exp = append(exp, toFilter(f, &isNot))
 			return nil
 		})
 		flag.Func("iname", "", func(s string) error {
-			exp = append(exp, toFilter(filter.NewIFileName(s), &isNot))
+			f, err := filter.NewIFileName(s)
+			if err != nil {
+				return err
+			}
+			exp = append(exp, toFilter(f, &isNot))
 			return nil
 		})
 		flag.Func("path", "", func(s string) error {
-			exp = append(exp, toFilter(filter.NewPath(filepath.FromSlash(s)), &isNot))
+			f, err := filter.NewPath(filepath.FromSlash(s))
+			if err != nil {
+				return err
+			}
+			exp = append(exp, toFilter(f, &isNot))
 			return nil
 		})
 		flag.Func("ipath", "", func(s string) error {
-			exp = append(exp, toFilter(filter.NewIPath(filepath.FromSlash(s)), &isNot))
+			f, err := filter.NewIPath(filepath.FromSlash(s))
+			if err != nil {
+				return err
+			}
+			exp = append(exp, toFilter(f, &isNot))
 			return nil
 		})
 		flag.Func("regex", "", func(s string) error {
