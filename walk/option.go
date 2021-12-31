@@ -44,6 +44,8 @@ flags are:
     Unlike find, it can be specified at the same time as prune.
 
 expression are:
+  -and
+    This flag is skipped.
   -empty
     Search emptry file and directory.
     This is shothand of '-size 0c'.
@@ -60,7 +62,7 @@ expression are:
     This option match only to file name.
   -not
     True if next expression false.
-  -o
+  -o -or
     Evaluate the previous and next expressions with or.
   -path string
     Search for files using wildcard expressions.
@@ -100,6 +102,7 @@ func NewWalkerFromArgs(args []string, out, outerr io.Writer) (*Walker, directory
 	{
 		var isNot bool
 		// expression
+		_ = flag.Bool("and", false, "")
 		flag.BoolVar(&isNot, "not", false, "")
 		flag.Func("name", "", func(s string) error {
 			f, err := filter.NewFileName(s)
@@ -198,12 +201,14 @@ func NewWalkerFromArgs(args []string, out, outerr io.Writer) (*Walker, directory
 				walker.matcher = walker.matcher[:0]
 			}
 		}), "prune", "")
-		flag.Var(boolFunc(func(b bool) {
+		orFunc := func(b bool) {
 			if b {
 				walker.matcher = append(walker.matcher, exp)
 				exp = make(filter.AndExp, 0, defaultMakeLen)
 			}
-		}), "o", "")
+		}
+		flag.Var(boolFunc(orFunc), "o", "")
+		flag.Var(boolFunc(orFunc), "or", "")
 	}
 
 	roots, remain := getRoots(args[1:])

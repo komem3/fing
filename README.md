@@ -16,7 +16,7 @@ If you want a fast `find` command, fing is a good choice.
 ### Go Tool
 
 ```bash
-go install github.com/komem3/fing
+go install github.com/komem3/fing@latest
 ```
 
 ### From Source Code
@@ -38,16 +38,19 @@ Fing is A fast file finder that provides an interface similar to find.
 flags are:
   -I
     Ignore files in .gitignore.
-    This is a fing specific option.
   -dry
     Only output parse result of expression.
     If this option is specified, the file will not be searched.
-    This is a fing specific option.
   -maxdepth
     The depth to search.
     Unlike find, it can be specified at the same time as prune.
 
 expression are:
+  -and
+    This flag is skipped.
+  -empty
+    Search emptry file and directory.
+    This is shothand of '-size 0c'.
   -iname string
     Like -name, but the match is case insensitive.
   -ipath string
@@ -56,28 +59,25 @@ expression are:
     Like -regex, but the match is case insensitive.
   -irname string
     Like -rname, but the match is case insensitive.
-    This is a fing specific option.
   -name string
-    Search for files using wildcard expressions.
+    Search for files using glob expressions.
     This option match only to file name.
   -not
     True if next expression false.
-  -o
+  -o -or
     Evaluate the previous and next expressions with or.
   -path string
     Search for files using wildcard expressions.
     This option match to file path.
+    Unlike find, This option explicitly matched by using one or more <slash>.
   -prune
     Prunes directory that match before expressions.
   -regex string
     Search for files using regular expressions.
     This option match to file path.
-    Unlike find, this is a backward match.
   -rname string
     Search for files using regular expressions.
-    This option match only to file name..
-    Unlike regex option, this option is exact match.
-    This is a fing specific option.
+    This option match only to file name.
   -size [+|-]n[ckMG]
     The size of file. Should specify the unit of size.
     c(for bytes), k(for KiB), M(for MiB), G(for Gib).
@@ -94,7 +94,7 @@ expression are:
 fing ./testdata -name "*.jpg"
 ```
 
-- ignores files in .gitignore and hidden files (search like fd).
+- ignores files in .gitignore and hidden files (search like `fd`).
 
 ```bash
 # fd txt ./testdata
@@ -107,7 +107,7 @@ fing ./testdata -I -name ".*" -prune -not -name ".*" -irname ".*txt.*"
 fing ./testdata -name "*.jpg" -o -name "*.png"
 ```
 
-- Debug option `-dry`. You can see how fing evaluated the expression.
+- Debug option `-dry`. You can see how `fing` evaluated the expression.
 
 ```bash
 fing -dry -name "*.jpg" -name "*.png"
@@ -117,6 +117,6 @@ fing -dry -name "*.jpg" -name "*.png"
 
 komem3
 
-## Licence
+## License
 
 MIT
