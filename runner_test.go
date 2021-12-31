@@ -84,7 +84,7 @@ var tests = []struct {
 		[]string{
 			"targets=[testdata/jpg_dir, testdata/png_dir] " +
 				filepath.FromSlash("ignore=true prunes=[type(file) * ipath(TXT/*)] ") +
-				"condition=[name(*.png) + not regex(.*\\.name)]",
+				"condition=[name(*.png) + not regex(^(.*\\.name)$)]",
 		},
 	},
 	{
