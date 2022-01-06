@@ -35,11 +35,11 @@ func NewIFileName(pattern string) (*IFileName, error) {
 }
 
 func (f FileName) Match(_ string, info fs.DirEntry) (bool, error) {
-	return f.Glob.Match(info.Name()), nil
+	return f.MatchString(info.Name()), nil
 }
 
 func (f IFileName) Match(_ string, info fs.DirEntry) (bool, error) {
-	return f.Glob.Match(strings.ToUpper(info.Name())), nil
+	return f.MatchString(strings.ToUpper(info.Name())), nil
 }
 
 func (f FileName) String() string {

@@ -35,11 +35,11 @@ func NewIPath(pattern string) (*IPath, error) {
 }
 
 func (p Path) Match(path string, _ fs.DirEntry) (bool, error) {
-	return p.Glob.Match(path), nil
+	return p.MatchString(path), nil
 }
 
 func (p IPath) Match(path string, _ fs.DirEntry) (bool, error) {
-	return p.Glob.Match(strings.ToUpper(path)), nil
+	return p.MatchString(strings.ToUpper(path)), nil
 }
 
 func (p Path) String() string {
