@@ -17,7 +17,6 @@ import (
 var concurrencyMax = runtime.NumCPU() * 2
 
 const (
-	defaultIgnoreBuffer    = 1 << 7
 	defaultDirecotryBuffer = 1 << 7
 )
 
