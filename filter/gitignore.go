@@ -57,7 +57,7 @@ func (g *Gitignore) Match(path string, info fs.DirEntry) (bool, error) {
 func (g *Gitignore) Add(src *Gitignore) *Gitignore {
 	if (g == nil || len(g.PathMatchers) == 0) &&
 		(src == nil || len(src.PathMatchers) == 0) {
-		return &Gitignore{PathMatchers: nil}
+		return nil
 	}
 	if src == nil || len(src.PathMatchers) == 0 {
 		dst := make([]gitignore.Pattern, len(g.PathMatchers))
