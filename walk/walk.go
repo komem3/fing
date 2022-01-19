@@ -1,9 +1,6 @@
 package walk
 
 import (
-	"bufio"
-	"bytes"
-	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -14,7 +11,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/go-git/go-git/v5/plumbing/format/gitignore"
 	"github.com/komem3/fing/filter"
 )
 
@@ -126,7 +122,7 @@ func (w *Walker) walk(root string, gitignores *filter.Gitignore) {
 	if w.gitignore {
 		ignoreFile := w.getIgnore(files)
 		if ignoreFile != "" {
-			newIgnore, err = w.extractGitignore(root, ignoreFile)
+			newIgnore, err = filter.NewGitIgnore(root, ignoreFile)
 			if err != nil {
 				w.writeError(err)
 				return
@@ -207,40 +203,6 @@ func (*Walker) getIgnore(files []fs.DirEntry) string {
 		}
 	}
 	return ""
-}
-
-func (w *Walker) extractGitignore(root, path string) (ignore *filter.Gitignore, err error) {
-	buf, err := os.ReadFile(filepath.Join(root, path))
-	if err != nil {
-		return nil, err
-	}
-	ignore = &filter.Gitignore{
-		PathMatchers: make([]gitignore.Pattern, 0, defaultIgnoreBuffer),
-	}
-	reader := bufio.NewReader(bytes.NewReader(buf))
-	for {
-		b, _, err := reader.ReadLine()
-		if errors.Is(err, io.EOF) {
-			break
-		}
-		if len(b) == 0 {
-			continue
-		}
-		if b[0] == '#' {
-			continue
-		}
-		str := string(b)
-		if strings.Contains(str, "/") {
-			if str[0] == '!' && len(str) > 1 {
-				ignore.PathMatchers = append(ignore.PathMatchers, gitignore.ParsePattern("!"+filepath.ToSlash(filepath.Join(root, str[1:])), nil))
-			} else {
-				ignore.PathMatchers = append(ignore.PathMatchers, gitignore.ParsePattern(filepath.ToSlash(filepath.Join(root, str)), nil))
-			}
-			continue
-		}
-		ignore.PathMatchers = append(ignore.PathMatchers, gitignore.ParsePattern(str, nil))
-	}
-	return ignore, nil
 }
 
 func (d directoryInfos) String() string {

@@ -1,13 +1,84 @@
 package filter_test
 
 import (
+	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/go-git/go-git/v5/plumbing/format/gitignore"
 	"github.com/komem3/fing/filter"
 )
+
+var tmpDir = os.TempDir()
+
+var domains = []string{"", strings.Trim(tmpDir, "/")}
+
+var extactTests = []struct {
+	name   string
+	data   []string
+	ignore *filter.Gitignore
+}{
+	{
+		"parse gitignore",
+		[]string{
+			"# comment out",
+			"node_modules/**",
+			"/vendor",
+			"*.jpg",
+			"!*.txt",
+			"!sample.png",
+			"!/root.png",
+		},
+		&filter.Gitignore{
+			PathMatchers: []gitignore.Pattern{
+				gitignore.ParsePattern(filepath.ToSlash("node_modules/**"), domains),
+				gitignore.ParsePattern(filepath.ToSlash("/vendor"), domains),
+				gitignore.ParsePattern("*.jpg", domains),
+				gitignore.ParsePattern("!*.txt", domains),
+				gitignore.ParsePattern("!sample.png", domains),
+				gitignore.ParsePattern("!"+filepath.ToSlash("/root.png"), domains),
+			},
+		},
+	},
+	{
+		"empty file",
+		[]string{},
+		&filter.Gitignore{},
+	},
+}
+
+func TestNewGitIgnore(t *testing.T) {
+	for _, tt := range extactTests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			tmp, err := os.CreateTemp(tmpDir, "testgitignore*")
+			if err != nil {
+				t.Fatal(err)
+			}
+			t.Cleanup(func() { os.Remove(tmp.Name()) })
+			if _, err := tmp.WriteString(strings.Join(tt.data, "\n")); err != nil {
+				t.Fatal(err)
+			}
+			tmp.Close()
+
+			ignores, err := filter.NewGitIgnore(tmpDir, filepath.Base(tmp.Name()))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(tt.ignore.PathMatchers) != len(ignores.PathMatchers) {
+				t.Errorf("ignores len mismatch want -, but got +\n-%s\n+%s", tt.ignore.PathMatchers, ignores.PathMatchers)
+			}
+			for i, ignore := range tt.ignore.PathMatchers {
+				if !reflect.DeepEqual(ignore, ignores.PathMatchers[i]) {
+					t.Errorf("ignore mismatch want -, but got +\n-%s\n+%s", ignore, ignores.PathMatchers[i])
+				}
+			}
+		})
+	}
+}
 
 func TestGitignore_Match(t *testing.T) {
 	t.Parallel()
@@ -20,35 +91,36 @@ func TestGitignore_Match(t *testing.T) {
 		{
 			"match",
 			[]gitignore.Pattern{
-				gitignore.ParsePattern("/coverage.*", nil),
+				gitignore.ParsePattern("/*.out", []string{"root", "test"}),
 			},
-			"coverage.out",
+			filepath.FromSlash("root/test/coverage.out"),
 			true,
 		},
 		{
 			"negative case",
 			[]gitignore.Pattern{
-				gitignore.ParsePattern("node_modules/**", nil),
-				gitignore.ParsePattern("!**/index.js", nil),
+				gitignore.ParsePattern("node_modules/**", []string{"root"}),
+				gitignore.ParsePattern("!**/index.js", []string{"root"}),
 			},
-			filepath.FromSlash("node_modules/sample/index.js"),
+			filepath.FromSlash("root/node_modules/sample/index.js"),
 			false,
 		},
 		{
 			"negative negative case",
 			[]gitignore.Pattern{
-				gitignore.ParsePattern("node_modules/**", nil),
-				gitignore.ParsePattern("!**/index.js", nil),
-				gitignore.ParsePattern("node_modules/sample/*", nil),
+				gitignore.ParsePattern("node_modules/**", []string{"root"}),
+				gitignore.ParsePattern("!**/index.js", []string{"root"}),
+				gitignore.ParsePattern("node_modules/sample/*", []string{"root"}),
 			},
-			filepath.FromSlash("node_modules/sample/index.js"),
+			filepath.FromSlash("root/node_modules/sample/index.js"),
 			true,
 		},
 	} {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			if match, _ := (&filter.Gitignore{PathMatchers: tt.ignore}).Match(tt.filename, &mockDirFileInfo{isDir: false}); match != tt.match {
+			if match, _ := (&filter.Gitignore{PathMatchers: tt.ignore}).
+				Match(tt.filename, &mockDirFileInfo{isDir: false}); match != tt.match {
 				t.Errorf("Match want %t, but got %t", tt.match, match)
 			}
 		})
