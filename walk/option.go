@@ -1,9 +1,9 @@
 package walk
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -84,7 +84,7 @@ expression are:
     Support file(f), directory(d), named piep(p) and socket(s).
 `
 
-func NewWalkerFromArgs(args []string, out, outerr io.Writer) (*Walker, directoryInfos, error) {
+func NewWalkerFromArgs(args []string, out, outerr *bufio.Writer) (*Walker, directoryInfos, error) {
 	walker := &Walker{
 		matcher:     make(filter.OrExp, 0, defaultMakeLen),
 		prunes:      make(filter.OrExp, 0, defaultMakeLen),

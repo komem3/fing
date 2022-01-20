@@ -4,18 +4,14 @@ import (
 	"bufio"
 	"fmt"
 	"io"
-	"log"
+	"time"
 
 	"github.com/komem3/fing/walk"
 )
 
-// If there are many allocates, the execution speed will decrease.
-// Therefore, the initial value is increased.
-const initBufferSize = 1 << 10
-
 func run(args []string, stdout, stderr io.Writer) error {
-	out := bufio.NewWriterSize(stdout, initBufferSize)
-	outerr := bufio.NewWriterSize(stderr, initBufferSize)
+	out := bufio.NewWriterSize(stdout, 0)
+	outerr := bufio.NewWriterSize(stderr, 0)
 	walker, paths, err := walk.NewWalkerFromArgs(args, out, outerr)
 	if err != nil {
 		return err
@@ -24,14 +20,23 @@ func run(args []string, stdout, stderr io.Writer) error {
 		fmt.Fprintf(stdout, "targets=[%s] %s\n", paths, walker)
 		return nil
 	}
-	walker.Walk(paths)
 
-	if err := out.Flush(); err != nil {
-		log.Printf("[ERROR] %v", err)
+	ch := make(chan struct{}, 1)
+	ticker := time.NewTicker(time.Millisecond)
+	go func() {
+		walker.Walk(paths)
+		walker.Wait()
+		ch <- struct{}{}
+	}()
+	for end := false; !end; {
+		select {
+		case <-ch:
+			end = true
+		case <-ticker.C:
+			walker.Flush()
+		}
 	}
-	if err := outerr.Flush(); err != nil {
-		log.Printf("[ERROR] %v", err)
-	}
+	walker.Flush()
 
 	if walker.IsErr {
 		return fmt.Errorf("error occurred")

@@ -1,8 +1,8 @@
 package walk
 
 import (
+	"bufio"
 	"fmt"
-	"io"
 	"io/fs"
 	"log"
 	"os"
@@ -31,10 +31,11 @@ type Walker struct {
 	depth     int
 
 	// result
-	out     io.Writer
-	outerr  io.Writer
+	out     *bufio.Writer
+	outerr  *bufio.Writer
 	IsErr   bool
 	targets directoryInfos
+	writing sync.WaitGroup
 
 	// concurrency control
 	wg          sync.WaitGroup
@@ -170,16 +171,39 @@ func (w *Walker) walkFile(path string, info fs.DirEntry, ignores *filter.Gitigno
 
 func (w *Walker) writeError(err error) {
 	w.IsErr = true
-	w.outmux.Lock()
-	if _, err := fmt.Fprintln(w.outerr, err.Error()); err != nil {
-		log.Printf("[ERROR] %v", err)
-	}
-	w.outmux.Unlock()
+	w.writing.Add(1)
+	go func() {
+		w.outmux.Lock()
+		if _, err := w.outerr.WriteString(err.Error() + "\n"); err != nil {
+			log.Printf("[ERROR] %v", err)
+		}
+		w.outmux.Unlock()
+		w.writing.Done()
+	}()
 }
 
 func (w *Walker) writeFile(path string, _ fs.DirEntry) {
+	w.writing.Add(1)
+	go func() {
+		w.outmux.Lock()
+		if _, err := w.out.WriteString(path + "\n"); err != nil {
+			log.Printf("[ERROR] %v", err)
+		}
+		w.outmux.Unlock()
+		w.writing.Done()
+	}()
+}
+
+func (w *Walker) Wait() {
+	w.writing.Wait()
+}
+
+func (w *Walker) Flush() {
 	w.outmux.Lock()
-	if _, err := fmt.Fprintln(w.out, path); err != nil {
+	if err := w.out.Flush(); err != nil {
+		log.Printf("[ERROR] %v", err)
+	}
+	if err := w.outerr.Flush(); err != nil {
 		log.Printf("[ERROR] %v", err)
 	}
 	w.outmux.Unlock()
