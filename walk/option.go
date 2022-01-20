@@ -31,7 +31,7 @@ func (i boolFunc) Set(s string) error {
 var Usage = `
 Usage: fing [staring-point...] [flag] [expression]
 
-Fing is A fast file finder that provides an interface similar to find.
+Fing is a fast file finder that provides an interface similar to find.
 
 flags are:
   -I
@@ -44,7 +44,7 @@ flags are:
     Unlike find, it can be specified at the same time as prune.
 
 expression are:
-  -and
+  -a -and
     This flag is skipped.
   -empty
     Search emptry file and directory.
@@ -98,10 +98,25 @@ func NewWalkerFromArgs(args []string, out, outerr *bufio.Writer) (*Walker, direc
 	flag := flag.NewFlagSet(args[0], flag.ExitOnError)
 	flag.Usage = func() { fmt.Fprint(os.Stderr, Usage) }
 
+	{
+		// flags
+		flag.BoolVar(&walker.gitignore, "I", false, "")
+		flag.BoolVar(&walker.IsDry, "dry", false, "")
+		flag.Func("maxdepth", "", func(s string) error {
+			d, err := strconv.Atoi(s)
+			if err != nil {
+				return err
+			}
+			walker.depth = d
+			return nil
+		})
+	}
+
 	exp := make(filter.AndExp, 0, defaultMakeLen)
 	{
 		var isNot bool
 		// expression
+		_ = flag.Bool("a", false, "")
 		_ = flag.Bool("and", false, "")
 		flag.BoolVar(&isNot, "not", false, "")
 		flag.Func("name", "", func(s string) error {
@@ -212,10 +227,6 @@ func NewWalkerFromArgs(args []string, out, outerr *bufio.Writer) (*Walker, direc
 	}
 
 	roots, remain := getRoots(args[1:])
-	remain, err := setOption(walker, remain)
-	if err != nil {
-		return nil, nil, err
-	}
 	if err := flag.Parse(remain); err != nil {
 		return nil, nil, err
 	}
@@ -229,35 +240,6 @@ func toFilter(f filter.FileExp, isNot *bool) filter.FileExp {
 		return filter.NewNotExp(f)
 	}
 	return f
-}
-
-func setOption(walker *Walker, args []string) (remine []string, err error) {
-	remine = args[:]
-	for len(remine) > 0 && len(remine[0]) > 0 {
-		switch remine[0] {
-		case "-I":
-			walker.gitignore = true
-		case "-dry":
-			walker.IsDry = true
-		case "-maxdepth":
-			if len(remine) < 2 {
-				return remine, nil
-			}
-			d, err := strconv.Atoi(remine[1])
-			if err != nil {
-				return nil, err
-			}
-			walker.depth = d
-			remine = remine[1:]
-		default:
-			return remine, nil
-		}
-		if len(remine) == 1 {
-			return nil, nil
-		}
-		remine = remine[1:]
-	}
-	return remine, nil
 }
 
 func getRoots(args []string) (roots []*direcotryInfo, remain []string) {

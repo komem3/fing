@@ -1,6 +1,6 @@
 # Fing
 
-Fing is A fast file finder.
+Fing is a fast file finder.
 It doesn't cover all of find's rich options, but fing provides a similar interface.
 
 ## Why fing
@@ -33,7 +33,7 @@ sudo mv fing /usr/bin/
 ```
 Usage: fing [staring-point...] [flag] [expression]
 
-Fing is A fast file finder that provides an interface similar to find.
+Fing is a fast file finder that provides an interface similar to find.
 
 flags are:
   -I
@@ -46,7 +46,7 @@ flags are:
     Unlike find, it can be specified at the same time as prune.
 
 expression are:
-  -and
+  -a -and
     This flag is skipped.
   -empty
     Search emptry file and directory.
