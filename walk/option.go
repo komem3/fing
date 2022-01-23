@@ -49,6 +49,8 @@ expression are:
   -empty
     Search emptry file and directory.
     This is shothand of '-size 0c'.
+  -executable
+    Match files which are executable by current user.
   -iname string
     Like -name, but the match is case insensitive.
   -ipath string
@@ -208,6 +210,11 @@ func NewWalkerFromArgs(args []string, out, outerr *bufio.Writer) (*Walker, direc
 				exp = append(exp, toFilter(f, &isNot))
 			}
 		}), "empty", "")
+		flag.Var(boolFunc(func(b bool) {
+			if b {
+				exp = append(exp, toFilter(filter.NewExecutable(), &isNot))
+			}
+		}), "executable", "")
 		flag.Var(boolFunc(func(b bool) {
 			if b {
 				walker.matcher = append(walker.matcher, exp)

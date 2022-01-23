@@ -28,6 +28,8 @@ var tests = []struct {
 	{
 		"fing testdata -I -type f -not -name .*",
 		[]string{
+			filepath.FromSlash("testdata/scripts/test.sh"),
+			filepath.FromSlash("testdata/scripts/README.md"),
 			filepath.FromSlash("testdata/txt_dir/1.txt"),
 			filepath.FromSlash("testdata/txt_dir/2.txt"),
 		},
@@ -80,6 +82,13 @@ var tests = []struct {
 		},
 	},
 	{
+		"fing testdata/scripts/ -executable",
+		[]string{
+			filepath.FromSlash("testdata/scripts/"),
+			filepath.FromSlash("testdata/scripts/test.sh"),
+		},
+	},
+	{
 		"fing testdata/jpg_dir testdata/png_dir -dry -I -type f -ipath txt/* -prune -name *.png -o -not -regex .*\\.name",
 		[]string{
 			"targets=[testdata/jpg_dir, testdata/png_dir] " +
@@ -91,6 +100,8 @@ var tests = []struct {
 		"fing testdata -size +0c -type f",
 		[]string{
 			filepath.FromSlash("testdata/.gitignore"),
+			filepath.FromSlash("testdata/scripts/test.sh"),
+			filepath.FromSlash("testdata/scripts/README.md"),
 			filepath.FromSlash("testdata/txt_dir/.gitignore"),
 			filepath.FromSlash("testdata/txt_dir/1.txt"),
 			filepath.FromSlash("testdata/txt_dir/2.txt"),

@@ -51,6 +51,8 @@ expression are:
   -empty
     Search emptry file and directory.
     This is shothand of '-size 0c'.
+  -executable
+    Match files which are executable by current user.
   -iname string
     Like -name, but the match is case insensitive.
   -ipath string

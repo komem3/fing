@@ -19,7 +19,7 @@ var (
 )
 
 func NewPath(pattern string) (*Path, error) {
-	glob, err := glob.Compile(pattern)
+	glob, err := glob.Compile(escapeBackSlash(pattern))
 	if err != nil {
 		return nil, err
 	}
@@ -27,7 +27,7 @@ func NewPath(pattern string) (*Path, error) {
 }
 
 func NewIPath(pattern string) (*IPath, error) {
-	glob, err := glob.Compile(strings.ToUpper(pattern))
+	glob, err := glob.Compile(strings.ToUpper(escapeBackSlash(pattern)))
 	if err != nil {
 		return nil, err
 	}

@@ -19,7 +19,7 @@ var (
 )
 
 func NewFileName(pattern string) (*FileName, error) {
-	glob, err := glob.Compile(pattern)
+	glob, err := glob.Compile(escapeBackSlash(pattern))
 	if err != nil {
 		return nil, err
 	}
@@ -27,7 +27,7 @@ func NewFileName(pattern string) (*FileName, error) {
 }
 
 func NewIFileName(pattern string) (*IFileName, error) {
-	glob, err := glob.Compile(strings.ToUpper(pattern))
+	glob, err := glob.Compile(strings.ToUpper(escapeBackSlash(pattern)))
 	if err != nil {
 		return nil, err
 	}
