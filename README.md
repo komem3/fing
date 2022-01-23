@@ -115,6 +115,13 @@ fing ./testdata -name "*.jpg" -o -name "*.png"
 fing -dry -name "*.jpg" -name "*.png"
 ```
 
+## Benchmark
+| Command | Mean [s] | Min [s] | Max [s] | Relative |
+|:---|---:|---:|---:|---:|
+| `find . -iname '*[0-9].jpg'` | 4.181 ± 0.085 | 4.091 | 4.336 | 3.54 ± 0.25 |
+| `fdfind -HI '.*[0-9]\.jpg$'` | 1.192 ± 0.012 | 1.173 | 1.216 | 1.01 ± 0.07 |
+| `fing . -iname '*[0-9].jpg'` | 1.180 ± 0.079 | 1.122 | 1.377 | 1.00 |
+
 ## Author
 
 komem3
