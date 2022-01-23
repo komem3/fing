@@ -13,7 +13,7 @@ import (
 
 var tmpDir = os.TempDir()
 
-var domains = []string{"", strings.Trim(tmpDir, "/")}
+var domains = strings.Split(tmpDir, string(filepath.Separator))
 
 var extactTests = []struct {
 	name   string
