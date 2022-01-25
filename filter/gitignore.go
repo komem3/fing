@@ -23,6 +23,9 @@ var _ FileExp = (*Gitignore)(nil)
 
 func NewGitIgnore(dir string, file string) (*Gitignore, error) {
 	domain := strings.Split(dir, separator)
+	if len(domain) > 0 && domain[0] == "." {
+		domain = domain[1:]
+	}
 	buf, err := os.ReadFile(filepath.Join(dir, file))
 	if err != nil {
 		return nil, err
