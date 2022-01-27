@@ -82,17 +82,16 @@ var tests = []struct {
 		},
 	},
 	{
-		"fing testdata/scripts/ -executable",
+		"fing testdata/ -executable -type d -name scripts",
 		[]string{
-			filepath.FromSlash("testdata/scripts/"),
-			filepath.FromSlash("testdata/scripts/test.sh"),
+			filepath.FromSlash("testdata/scripts"),
 		},
 	},
 	{
-		"fing testdata/jpg_dir testdata/png_dir -dry -I -type f -ipath txt/* -prune -name *.png -o -not -regex .*\\.name",
+		"fing testdata/jpg_dir testdata/png_dir -dry -I -type f -iname txt* -prune -name *.png -o -not -regex .*\\.name",
 		[]string{
 			"targets=[testdata/jpg_dir, testdata/png_dir] " +
-				filepath.FromSlash("ignore=true prunes=[type(file) * ipath(TXT/*)] ") +
+				filepath.FromSlash("ignore=true prunes=[type(file) * iname(TXT*)] ") +
 				"condition=[name(*.png) + not regex(^(.*\\.name)$)]",
 		},
 	},
