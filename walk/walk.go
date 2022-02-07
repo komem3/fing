@@ -16,6 +16,13 @@ import (
 
 var concurrencyMax = runtime.NumCPU() * 2
 
+type printType int
+
+const (
+	println printType = iota
+	print0
+)
+
 const (
 	defaultDirecotryBuffer = 1 << 7
 )
@@ -36,6 +43,9 @@ type Walker struct {
 	IsErr   bool
 	targets directoryInfos
 	writing sync.WaitGroup
+
+	// print
+	printType printType
 
 	// concurrency control
 	wg          sync.WaitGroup
@@ -186,8 +196,15 @@ func (w *Walker) writeFile(path string, _ fs.DirEntry) {
 	w.writing.Add(1)
 	go func() {
 		w.outmux.Lock()
-		if _, err := w.out.WriteString(path + "\n"); err != nil {
-			log.Printf("[ERROR] %v", err)
+		switch w.printType {
+		case println:
+			if _, err := w.out.WriteString(path + "\n"); err != nil {
+				log.Printf("[ERROR] %v", err)
+			}
+		case print0:
+			if _, err := w.out.WriteString(path + "\x00"); err != nil {
+				log.Printf("[ERROR] %v", err)
+			}
 		}
 		w.outmux.Unlock()
 		w.writing.Done()

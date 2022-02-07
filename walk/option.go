@@ -70,6 +70,8 @@ expression are:
     Search for files using wildcard expressions.
     This option match to file path.
     Unlike find, This option explicitly matched by using one or more <slash>.
+  -print0
+    Add a null character after the file name.
   -prune
     Prunes directory that match before expressions.
   -regex string
@@ -95,6 +97,7 @@ func NewWalkerFromArgs(args []string, out, outerr *bufio.Writer) (*Walker, direc
 		depth:       -1,
 		targets:     make(directoryInfos, 0, defaultDirecotryBuffer),
 		concurrency: make(chan struct{}, concurrencyMax),
+		printType:   println,
 	}
 
 	flag := flag.NewFlagSet(args[0], flag.ExitOnError)
@@ -231,6 +234,11 @@ func NewWalkerFromArgs(args []string, out, outerr *bufio.Writer) (*Walker, direc
 		}
 		flag.Var(boolFunc(orFunc), "o", "")
 		flag.Var(boolFunc(orFunc), "or", "")
+		flag.Var(boolFunc(func(b bool) {
+			if b {
+				walker.printType = print0
+			}
+		}), "print0", "")
 	}
 
 	roots, remain := getRoots(args[1:])
