@@ -70,7 +70,7 @@ var tests = []struct {
 		[]string{},
 	},
 	{
-		"fing testdata -maxdepth 1 -name .gitignore",
+		"fing -maxdepth 1 -name .gitignore testdata",
 		[]string{
 			filepath.FromSlash("testdata/.gitignore"),
 		},

@@ -241,12 +241,14 @@ func NewWalkerFromArgs(args []string, out, outerr *bufio.Writer) (*Walker, direc
 		}), "print0", "")
 	}
 
-	roots, remain := getRoots(args[1:])
+	roots, remain := getRoots(args[1:], false)
 	if err := flag.Parse(remain); err != nil {
 		return nil, nil, err
 	}
+	backRoots, _ := getRoots(flag.Args(), len(roots) == 0)
+
 	walker.matcher = append(walker.matcher, exp)
-	return walker, roots, nil
+	return walker, append(roots, backRoots...), nil
 }
 
 func toFilter(f filter.FileExp, isNot *bool) filter.FileExp {
@@ -257,8 +259,8 @@ func toFilter(f filter.FileExp, isNot *bool) filter.FileExp {
 	return f
 }
 
-func getRoots(args []string) (roots []*direcotryInfo, remain []string) {
-	roots = make(directoryInfos, 0, defaultMakeLen)
+func getRoots(args []string, leastOne bool) (roots []*direcotryInfo, remain []string) {
+	remain = args[:]
 	for i, arg := range args {
 		if len(arg) == 0 {
 			break
@@ -270,7 +272,7 @@ func getRoots(args []string) (roots []*direcotryInfo, remain []string) {
 		remain = args[i+1:]
 	}
 
-	if len(roots) == 0 {
+	if leastOne && len(roots) == 0 {
 		return directoryInfos{{path: "."}}, args
 	}
 
