@@ -119,91 +119,10 @@ func NewWalkerFromArgs(args []string, out, outerr *bufio.Writer) (*Walker, direc
 
 	exp := make(filter.AndExp, 0, defaultMakeLen)
 	{
-		var isNot bool
 		// expression
+		var isNot bool
 		_ = flag.Bool("a", false, "")
 		_ = flag.Bool("and", false, "")
-		flag.BoolVar(&isNot, "not", false, "")
-		flag.Func("name", "", func(s string) error {
-			f, err := filter.NewFileName(s)
-			if err != nil {
-				return err
-			}
-			exp = append(exp, toFilter(f, &isNot))
-			return nil
-		})
-		flag.Func("iname", "", func(s string) error {
-			f, err := filter.NewIFileName(s)
-			if err != nil {
-				return err
-			}
-			exp = append(exp, toFilter(f, &isNot))
-			return nil
-		})
-		flag.Func("path", "", func(s string) error {
-			f, err := filter.NewPath(filepath.FromSlash(s))
-			if err != nil {
-				return err
-			}
-			exp = append(exp, toFilter(f, &isNot))
-			return nil
-		})
-		flag.Func("ipath", "", func(s string) error {
-			f, err := filter.NewIPath(filepath.FromSlash(s))
-			if err != nil {
-				return err
-			}
-			exp = append(exp, toFilter(f, &isNot))
-			return nil
-		})
-		flag.Func("regex", "", func(s string) error {
-			f, err := filter.NewRegex(filepath.FromSlash(s))
-			if err != nil {
-				return err
-			}
-			exp = append(exp, toFilter(f, &isNot))
-			return nil
-		})
-		flag.Func("iregex", "", func(s string) error {
-			f, err := filter.NewIRegex(filepath.FromSlash(s))
-			if err != nil {
-				return err
-			}
-			exp = append(exp, toFilter(f, &isNot))
-			return nil
-		})
-		flag.Func("rname", "", func(s string) error {
-			f, err := filter.NewRegexName(s)
-			if err != nil {
-				return err
-			}
-			exp = append(exp, toFilter(f, &isNot))
-			return nil
-		})
-		flag.Func("irname", "", func(s string) error {
-			f, err := filter.NewIRegexName(s)
-			if err != nil {
-				return err
-			}
-			exp = append(exp, toFilter(f, &isNot))
-			return nil
-		})
-		flag.Func("type", "", func(s string) error {
-			f, err := filter.NewFileType(s)
-			if err != nil {
-				return err
-			}
-			exp = append(exp, toFilter(f, &isNot))
-			return nil
-		})
-		flag.Func("size", "", func(s string) error {
-			f, err := filter.NewSize(s)
-			if err != nil {
-				return err
-			}
-			exp = append(exp, toFilter(f, &isNot))
-			return nil
-		})
 		flag.Var(boolFunc(func(b bool) {
 			if b {
 				f, err := filter.NewSize("0c")
@@ -218,14 +137,47 @@ func NewWalkerFromArgs(args []string, out, outerr *bufio.Writer) (*Walker, direc
 				exp = append(exp, toFilter(filter.NewExecutable(), &isNot))
 			}
 		}), "executable", "")
-		flag.Var(boolFunc(func(b bool) {
-			if b {
-				walker.matcher = append(walker.matcher, exp)
-				walker.prunes = append(walker.prunes, walker.matcher...)
-				exp = make(filter.AndExp, 0, defaultMakeLen)
-				walker.matcher = walker.matcher[:0]
+		flag.Func("iname", "", func(s string) error {
+			f, err := filter.NewIFileName(s)
+			if err != nil {
+				return err
 			}
-		}), "prune", "")
+			exp = append(exp, toFilter(f, &isNot))
+			return nil
+		})
+		flag.Func("ipath", "", func(s string) error {
+			f, err := filter.NewIPath(filepath.FromSlash(s))
+			if err != nil {
+				return err
+			}
+			exp = append(exp, toFilter(f, &isNot))
+			return nil
+		})
+		flag.Func("iregex", "", func(s string) error {
+			f, err := filter.NewIRegex(filepath.FromSlash(s))
+			if err != nil {
+				return err
+			}
+			exp = append(exp, toFilter(f, &isNot))
+			return nil
+		})
+		flag.Func("irname", "", func(s string) error {
+			f, err := filter.NewIRegexName(s)
+			if err != nil {
+				return err
+			}
+			exp = append(exp, toFilter(f, &isNot))
+			return nil
+		})
+		flag.Func("name", "", func(s string) error {
+			f, err := filter.NewFileName(s)
+			if err != nil {
+				return err
+			}
+			exp = append(exp, toFilter(f, &isNot))
+			return nil
+		})
+		flag.BoolVar(&isNot, "not", false, "")
 		orFunc := func(b bool) {
 			if b {
 				walker.matcher = append(walker.matcher, exp)
@@ -234,11 +186,59 @@ func NewWalkerFromArgs(args []string, out, outerr *bufio.Writer) (*Walker, direc
 		}
 		flag.Var(boolFunc(orFunc), "o", "")
 		flag.Var(boolFunc(orFunc), "or", "")
+		flag.Func("path", "", func(s string) error {
+			f, err := filter.NewPath(filepath.FromSlash(s))
+			if err != nil {
+				return err
+			}
+			exp = append(exp, toFilter(f, &isNot))
+			return nil
+		})
 		flag.Var(boolFunc(func(b bool) {
 			if b {
 				walker.printType = print0
 			}
 		}), "print0", "")
+		flag.Var(boolFunc(func(b bool) {
+			if b {
+				walker.matcher = append(walker.matcher, exp)
+				walker.prunes = append(walker.prunes, walker.matcher...)
+				exp = make(filter.AndExp, 0, defaultMakeLen)
+				walker.matcher = walker.matcher[:0]
+			}
+		}), "prune", "")
+		flag.Func("regex", "", func(s string) error {
+			f, err := filter.NewRegex(filepath.FromSlash(s))
+			if err != nil {
+				return err
+			}
+			exp = append(exp, toFilter(f, &isNot))
+			return nil
+		})
+		flag.Func("rname", "", func(s string) error {
+			f, err := filter.NewRegexName(s)
+			if err != nil {
+				return err
+			}
+			exp = append(exp, toFilter(f, &isNot))
+			return nil
+		})
+		flag.Func("size", "", func(s string) error {
+			f, err := filter.NewSize(s)
+			if err != nil {
+				return err
+			}
+			exp = append(exp, toFilter(f, &isNot))
+			return nil
+		})
+		flag.Func("type", "", func(s string) error {
+			f, err := filter.NewFileType(s)
+			if err != nil {
+				return err
+			}
+			exp = append(exp, toFilter(f, &isNot))
+			return nil
+		})
 	}
 
 	roots, remain := getRoots(args[1:], false)
