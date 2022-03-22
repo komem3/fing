@@ -29,8 +29,9 @@ const (
 
 type Walker struct {
 	// matcher
-	matcher filter.OrExp
-	prunes  filter.OrExp
+	matcher       filter.OrExp
+	prunes        filter.OrExp
+	excludeIgnore filter.OrExp
 
 	// options
 	IsDry     bool
@@ -148,8 +149,21 @@ func (w *Walker) walk(root string, gitignores *filter.Gitignore) {
 
 func (w *Walker) walkFile(path string, info fs.DirEntry, ignores *filter.Gitignore) {
 	if ignores != nil {
-		if match, _ := ignores.Match(path, info); match {
-			return
+		var (
+			match bool
+			err   error
+		)
+		if len(w.excludeIgnore) > 0 {
+			match, err = w.excludeIgnore.Match(path, info)
+			if err != nil {
+				w.writeError(err)
+				return
+			}
+		}
+		if !match {
+			if match, _ := ignores.Match(path, info); match {
+				return
+			}
 		}
 	}
 	if info.IsDir() {

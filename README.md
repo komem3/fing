@@ -36,14 +36,18 @@ Usage: fing [staring-point...] [flag] [expression]
 Fing is a fast file finder that provides an interface similar to find.
 
 flags are:
-  -I
-    Ignore files in .gitignore.
   -dry
     Only output parse result of expression.
     If this option is specified, the file will not be searched.
   -maxdepth
     The depth to search.
     Unlike find, it can be specified at the same time as prune.
+  -EI
+    Exclude pattern from I option.
+    This uses the before expressions as well as prune.
+    example: -I <expression> -EI
+  -I
+    Ignore files in .gitignore.
 
 expression are:
   -a -and
@@ -76,6 +80,7 @@ expression are:
     Add a null character after the file name.
   -prune
     Prunes directory that match before expressions.
+    example: <expression> -prune
   -regex string
     Search for files using regular expressions.
     This option match to file path.
