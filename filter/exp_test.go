@@ -114,6 +114,29 @@ func TestNotFilter_Match(t *testing.T) {
 	}
 }
 
+func TestAlwaysFilter_Match(t *testing.T) {
+	for _, tt := range []struct {
+		name   string
+		filter filter.AlwasyExp
+		match  bool
+	}{
+		{"always true", filter.AlwasyExp(true), true},
+		{"always false", filter.AlwasyExp(false), false},
+	} {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			match, err := tt.filter.Match("", nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if tt.match != match {
+				t.Errorf("match want %t, but got %t", tt.match, match)
+			}
+		})
+	}
+}
+
 func mustFileExp(exp filter.FileExp, err error) filter.FileExp {
 	if err != nil {
 		panic(err)

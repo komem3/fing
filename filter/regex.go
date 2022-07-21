@@ -13,7 +13,7 @@ type Regex struct {
 var _ FileExp = (*Regex)(nil)
 
 func NewRegex(pattern string) (*Regex, error) {
-	reg, err := regexp.Compile("^(" + pattern + ")$")
+	reg, err := regexp.Compile(pattern)
 	if err != nil {
 		return nil, err
 	}

@@ -57,6 +57,8 @@ expression are:
     This is shothand of '-size 0c'.
   -executable
     Match files which are executable by current user.
+  -false
+    Always false.
   -iname string
     Like -name, but the match is case insensitive.
   -ipath string
@@ -76,6 +78,8 @@ expression are:
     Search for files using wildcard expressions.
     This option match to file path.
     Unlike find, This option explicitly matched by using one or more <slash>.
+  -print
+    Add a new line character after the file name. This option is default enabled.
   -print0
     Add a null character after the file name.
   -prune
@@ -90,6 +94,8 @@ expression are:
   -size [+|-]n[ckMG]
     The size of file. Should specify the unit of size.
     c(for bytes), k(for KiB), M(for MiB), G(for Gib).
+  -true
+    Always true.
   -type string
     File is type.
     Support file(f), directory(d), named piep(p) and socket(s).
@@ -107,7 +113,7 @@ fing ./testdata -name "*.jpg"
 
 ```bash
 # fd txt ./testdata
-fing ./testdata -I -name ".*" -prune -not -name ".*" -irname ".*txt.*"
+fing ./testdata -I -name ".*" -prune -false -o -not -name ".*" -irname ".*txt.*"
 ```
 
 - Each operator is AND expression, but you can also specify OR expression.
@@ -121,6 +127,14 @@ fing ./testdata -name "*.jpg" -o -name "*.png"
 ```bash
 fing -dry -name "*.jpg" -name "*.png"
 ```
+
+## NOTE
+
+- The regular expression uses Go's [regexp](https://pkg.go.dev/regexp) package, so it behaves differently than the find command's regular expression.
+- The find command strictly evaluates operators from left to right, but fing may not do so to optimize process. Therefore, the following options may behave differently than find.
+  - print
+  - print0
+  - prune
 
 ## Benchmark
 

@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"strings"
 	"time"
 
 	"github.com/komem3/fing/walk"
@@ -17,7 +18,7 @@ func run(args []string, stdout, stderr io.Writer) error {
 		return err
 	}
 	if walker.IsDry {
-		fmt.Fprintf(stdout, "targets=[%s] %s\n", paths, walker)
+		fmt.Fprintf(stdout, "targets=[%s] %s\n", strings.Join(paths, ", "), walker)
 		return nil
 	}
 
