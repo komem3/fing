@@ -14,6 +14,8 @@ type NotExp struct {
 	filter FileExp
 }
 
+type AlwasyExp bool
+
 var (
 	_ FileExp = (OrExp)(nil)
 	_ FileExp = (AndExp)(nil)
@@ -74,9 +76,13 @@ func (e OrExp) String() string {
 			fmt.Fprintf(&buf, "%s", f)
 			continue
 		}
-		fmt.Fprintf(&buf, " + %s", f)
+		fmt.Fprintf(&buf, " || %s", f)
 	}
 	return buf.String()
+}
+
+func (a AlwasyExp) Match(path string, info fs.DirEntry) (bool, error) {
+	return bool(a), nil
 }
 
 func (e AndExp) String() string {
@@ -86,11 +92,15 @@ func (e AndExp) String() string {
 			fmt.Fprintf(&buf, "%s", f)
 			continue
 		}
-		fmt.Fprintf(&buf, " * %s", f)
+		fmt.Fprintf(&buf, " && %s", f)
 	}
 	return buf.String()
 }
 
 func (e *NotExp) String() string {
 	return fmt.Sprintf("not %s", e.filter)
+}
+
+func (a AlwasyExp) String() string {
+	return fmt.Sprintf("%t", bool(a))
 }

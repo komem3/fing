@@ -55,6 +55,8 @@ expression are:
     This is shothand of '-size 0c'.
   -executable
     Match files which are executable by current user.
+  -false
+    Always false.
   -iname string
     Like -name, but the match is case insensitive.
   -ipath string
@@ -74,6 +76,8 @@ expression are:
     Search for files using wildcard expressions.
     This option match to file path.
     Unlike find, This option explicitly matched by using one or more <slash>.
+  -print
+    Add a new line character after the file name. This option is default enabled.
   -print0
     Add a null character after the file name.
   -prune
@@ -88,19 +92,21 @@ expression are:
   -size [+|-]n[ckMG]
     The size of file. Should specify the unit of size.
     c(for bytes), k(for KiB), M(for MiB), G(for Gib).
+  -true
+    Always true.
   -type string
     File is type.
     Support file(f), directory(d), named piep(p) and socket(s).
 `
 
-func NewWalkerFromArgs(args []string, out, outerr *bufio.Writer) (*Walker, directoryInfos, error) {
+func NewWalkerFromArgs(args []string, out, outerr *bufio.Writer) (*Walker, []string, error) {
 	walker := &Walker{
 		matcher:     make(filter.OrExp, 0, defaultMakeLen),
 		prunes:      make(filter.OrExp, 0, defaultMakeLen),
 		out:         out,
 		outerr:      outerr,
 		depth:       -1,
-		targets:     make(directoryInfos, 0, defaultDirecotryBuffer),
+		targets:     make(entryInfos, 0, defaultDirecotryBuffer),
 		concurrency: make(chan struct{}, concurrencyMax),
 		printType:   println,
 	}
@@ -158,6 +164,11 @@ func NewWalkerFromArgs(args []string, out, outerr *bufio.Writer) (*Walker, direc
 				walker.matcher = walker.matcher[:0]
 			}
 		}), "EI", "")
+		flag.Var(boolFunc(func(b bool) {
+			if b {
+				exp = append(exp, toFilter(filter.AlwasyExp(false), &isNot))
+			}
+		}), "false", "")
 		flag.Func("ipath", "", func(s string) error {
 			f, err := filter.NewIPath(filepath.FromSlash(s))
 			if err != nil {
@@ -193,8 +204,10 @@ func NewWalkerFromArgs(args []string, out, outerr *bufio.Writer) (*Walker, direc
 		flag.BoolVar(&isNot, "not", false, "")
 		orFunc := func(b bool) {
 			if b {
-				walker.matcher = append(walker.matcher, exp)
-				exp = make(filter.AndExp, 0, defaultMakeLen)
+				if len(exp) > 0 {
+					walker.matcher = append(walker.matcher, exp)
+					exp = make(filter.AndExp, 0, defaultMakeLen)
+				}
 			}
 		}
 		flag.Var(boolFunc(orFunc), "o", "")
@@ -209,15 +222,17 @@ func NewWalkerFromArgs(args []string, out, outerr *bufio.Writer) (*Walker, direc
 		})
 		flag.Var(boolFunc(func(b bool) {
 			if b {
+				walker.printType = println
+			}
+		}), "print", "")
+		flag.Var(boolFunc(func(b bool) {
+			if b {
 				walker.printType = print0
 			}
 		}), "print0", "")
 		flag.Var(boolFunc(func(b bool) {
 			if b {
-				walker.matcher = append(walker.matcher, exp)
-				walker.prunes = append(walker.prunes, walker.matcher...)
-				exp = make(filter.AndExp, 0, defaultMakeLen)
-				walker.matcher = walker.matcher[:0]
+				walker.prunes = append(walker.prunes, exp)
 			}
 		}), "prune", "")
 		flag.Func("regex", "", func(s string) error {
@@ -244,6 +259,11 @@ func NewWalkerFromArgs(args []string, out, outerr *bufio.Writer) (*Walker, direc
 			exp = append(exp, toFilter(f, &isNot))
 			return nil
 		})
+		flag.Var(boolFunc(func(b bool) {
+			if b {
+				exp = append(exp, toFilter(filter.AlwasyExp(true), &isNot))
+			}
+		}), "true", "")
 		flag.Func("type", "", func(s string) error {
 			f, err := filter.NewFileType(s)
 			if err != nil {
@@ -272,7 +292,7 @@ func toFilter(f filter.FileExp, isNot *bool) filter.FileExp {
 	return f
 }
 
-func getRoots(args []string, leastOne bool) (roots []*direcotryInfo, remain []string) {
+func getRoots(args []string, leastOne bool) (roots []string, remain []string) {
 	remain = args[:]
 	for i, arg := range args {
 		if len(arg) == 0 {
@@ -281,12 +301,12 @@ func getRoots(args []string, leastOne bool) (roots []*direcotryInfo, remain []st
 		if arg[0] == '-' {
 			break
 		}
-		roots = append(roots, &direcotryInfo{path: arg})
+		roots = append(roots, arg)
 		remain = args[i+1:]
 	}
 
 	if leastOne && len(roots) == 0 {
-		return directoryInfos{{path: "."}}, args
+		return []string{"."}, args
 	}
 
 	return roots, remain

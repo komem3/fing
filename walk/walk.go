@@ -42,7 +42,7 @@ type Walker struct {
 	out     *bufio.Writer
 	outerr  *bufio.Writer
 	IsErr   bool
-	targets directoryInfos
+	targets entryInfos
 	writing sync.WaitGroup
 
 	// print
@@ -57,16 +57,18 @@ type Walker struct {
 	fmt.Stringer
 }
 
-type direcotryInfo struct {
+type entryInfo struct {
 	path   string
 	ignore *filter.Gitignore
+	info   fs.DirEntry
 }
 
-type directoryInfos []*direcotryInfo
+type entryInfos []*entryInfo
 
-func (w *Walker) Walk(roots directoryInfos) {
+func (w *Walker) Walk(roots []string) {
+	entries := make([]*entryInfo, 0, len(roots))
 	for _, r := range roots {
-		f, err := os.Open(r.path)
+		f, err := os.Open(r)
 		if err != nil {
 			w.writeError(err)
 			continue
@@ -77,31 +79,28 @@ func (w *Walker) Walk(roots directoryInfos) {
 			w.writeError(err)
 			continue
 		}
-		w.walkFile(r.path, entry, nil)
+		entries = append(entries, &entryInfo{path: r, info: entry})
 	}
 
-	depth := 1
-	for len(roots) > 0 && (w.depth == -1 || depth <= w.depth) {
+	for depth := 0; len(entries) > 0 && (w.depth == -1 || depth <= w.depth); depth++ {
 		w.targets = w.targets[:0]
-		for i := range roots {
+		for i := range entries {
 			w.wg.Add(1)
 			w.concurrency <- struct{}{}
-			go func(root *direcotryInfo) {
-				w.walk(root.path, root.ignore)
+			go func(entry *entryInfo) {
+				w.walk(entry)
 				<-w.concurrency
 				w.wg.Done()
-			}(roots[i])
+			}(entries[i])
 		}
 		w.wg.Wait()
 
-		if cap(roots) >= len(w.targets) {
-			roots = roots[:len(w.targets)]
+		if cap(entries) >= len(w.targets) {
+			entries = entries[:len(w.targets)]
 		} else {
-			roots = make(directoryInfos, len(w.targets))
+			entries = make(entryInfos, len(w.targets))
 		}
-		copy(roots, w.targets)
-
-		depth++
+		copy(entries, w.targets)
 	}
 }
 
@@ -122,8 +121,50 @@ func (w *Walker) String() string {
 	return s.String()
 }
 
-func (w *Walker) walk(root string, gitignores *filter.Gitignore) {
-	files, err := w.readDir(root)
+func (w *Walker) walk(entry *entryInfo) {
+	if entry.ignore != nil {
+		var (
+			match bool
+			err   error
+		)
+		if len(w.excludeIgnore) > 0 {
+			match, err = w.excludeIgnore.Match(entry.path, entry.info)
+			if err != nil {
+				w.writeError(err)
+				return
+			}
+		}
+		if !match {
+			if match, _ := entry.ignore.Match(entry.path, entry.info); match {
+				return
+			}
+		}
+	}
+	match, err := w.matcher.Match(entry.path, entry.info)
+	if err != nil {
+		w.writeError(err)
+		return
+	}
+	if match {
+		w.writeFile(entry.path, entry.info)
+	}
+
+	if entry.info.IsDir() {
+		w.scanDir(entry)
+	}
+}
+
+func (w *Walker) scanDir(entry *entryInfo) {
+	match, err := w.prunes.Match(entry.path, entry.info)
+	if err != nil {
+		w.writeError(err)
+		return
+	}
+	if len(w.prunes) > 0 && match {
+		return
+	}
+
+	files, err := w.readDir(entry.path)
 	if err != nil {
 		w.writeError(err)
 		return
@@ -133,63 +174,23 @@ func (w *Walker) walk(root string, gitignores *filter.Gitignore) {
 	if w.gitignore {
 		ignoreFile := w.getIgnore(files)
 		if ignoreFile != "" {
-			newIgnore, err = filter.NewGitIgnore(root, ignoreFile)
+			newIgnore, err = filter.NewGitIgnore(entry.path, ignoreFile)
 			if err != nil {
 				w.writeError(err)
 				return
 			}
 		}
 	}
-	newIgnore = gitignores.Add(newIgnore)
+	newIgnore = entry.ignore.Add(newIgnore)
 
-	for i := range files {
-		w.walkFile(filepath.Join(root, files[i].Name()), files[i], newIgnore)
-	}
-}
-
-func (w *Walker) walkFile(path string, info fs.DirEntry, ignores *filter.Gitignore) {
-	if ignores != nil {
-		var (
-			match bool
-			err   error
-		)
-		if len(w.excludeIgnore) > 0 {
-			match, err = w.excludeIgnore.Match(path, info)
-			if err != nil {
-				w.writeError(err)
-				return
-			}
-		}
-		if !match {
-			if match, _ := ignores.Match(path, info); match {
-				return
-			}
-		}
-	}
-	if info.IsDir() {
-		match, err := w.prunes.Match(path, info)
-		if err != nil {
-			w.writeError(err)
-			return
-		}
-		if len(w.prunes) > 0 && match {
-			return
-		}
+	for _, f := range files {
 		w.dirMux.Lock()
-		if info.Name() == ".git" {
-			w.targets = append(w.targets, &direcotryInfo{path: path})
+		if entry.info.Name() == ".git" {
+			w.targets = append(w.targets, &entryInfo{path: filepath.Join(entry.path, f.Name()), info: f})
 		} else {
-			w.targets = append(w.targets, &direcotryInfo{path: path, ignore: ignores})
+			w.targets = append(w.targets, &entryInfo{path: filepath.Join(entry.path, f.Name()), info: f, ignore: newIgnore})
 		}
 		w.dirMux.Unlock()
-	}
-	match, err := w.matcher.Match(path, info)
-	if err != nil {
-		w.writeError(err)
-		return
-	}
-	if match {
-		w.writeFile(path, info)
 	}
 }
 
@@ -259,7 +260,7 @@ func (*Walker) getIgnore(files []fs.DirEntry) string {
 	return ""
 }
 
-func (d directoryInfos) String() string {
+func (d entryInfos) String() string {
 	paths := make([]string, 0, len(d))
 	for _, p := range d {
 		paths = append(paths, p.path)

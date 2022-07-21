@@ -25,3 +25,7 @@ jobs:
 
       - name: Lint
         run: go vet ./...
+
+      - name: Compare Bash
+        if: runner.os == 'Linux'
+        run: ./test.sh

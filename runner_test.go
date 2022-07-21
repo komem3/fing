@@ -14,6 +14,12 @@ var tests = []struct {
 	output  []string
 }{
 	{
+		"fing testdata/jpg_dir/1.jpg",
+		[]string{
+			"testdata/jpg_dir/1.jpg",
+		},
+	},
+	{
 		"fing testdata/jpg_dir testdata/png_dir -empty -type f",
 		[]string{
 			filepath.FromSlash("testdata/jpg_dir/1.jpg"),
@@ -50,7 +56,7 @@ var tests = []struct {
 		},
 	},
 	{
-		"fing testdata -name .* -prune -path */link/* -o -name *.txt",
+		"fing testdata -name .* -prune -false -o -path */link/* -o -name *.txt",
 		[]string{
 			filepath.FromSlash("testdata/link/1.ln"),
 			filepath.FromSlash("testdata/link/2.ln"),
@@ -59,13 +65,7 @@ var tests = []struct {
 		},
 	},
 	{
-		"fing testdata -not -name .* -prune -not -type f",
-		[]string{
-			filepath.FromSlash("testdata/.hidden"),
-		},
-	},
-	{
-		"fing testdata -name jpg* -o -name png* -prune -irname (1|2).*",
+		"fing testdata -rname ^(jpg|png) -prune -false -o -irname (1|2).*",
 		[]string{
 			filepath.FromSlash("testdata/link/1.ln"),
 			filepath.FromSlash("testdata/link/2.ln"),
@@ -96,11 +96,11 @@ var tests = []struct {
 		},
 	},
 	{
-		"fing testdata/jpg_dir testdata/png_dir -dry -I -type f -iname txt* -prune -name *.png -o -not -regex .*\\.name",
+		"fing testdata/jpg_dir testdata/png_dir -dry -I -iname txt* -prune -false -o -name *.png -o -not -regex .*\\.name",
 		[]string{
 			"targets=[testdata/jpg_dir, testdata/png_dir] " +
-				filepath.FromSlash("ignore=true prunes=[type(file) * iname(TXT*)] ") +
-				"condition=[name(*.png) + not regex(^(.*\\.name)$)]",
+				filepath.FromSlash("ignore=true prunes=[iname(TXT*)] ") +
+				"condition=[iname(TXT*) && false || name(*.png) || not regex(.*\\.name)]",
 		},
 	},
 	{
