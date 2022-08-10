@@ -27,9 +27,7 @@ func NewNotExp(f FileExp) *NotExp {
 }
 
 func NewOrExp(f FileExp) OrExp {
-	or := make(OrExp, 1)
-	or[0] = f
-	return or
+	return OrExp{f}
 }
 
 func (e OrExp) Match(path string, info fs.DirEntry) (bool, error) {

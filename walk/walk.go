@@ -3,6 +3,7 @@ package walk
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"io/fs"
 	"log"
 	"os"
@@ -10,21 +11,18 @@ import (
 	"runtime"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/komem3/fing/filter"
 )
 
-var concurrencyMax = runtime.NumCPU() * 2
+var concurrencyNum = runtime.NumCPU() * 8
 
 type printType int
 
 const (
 	println printType = iota
 	print0
-)
-
-const (
-	defaultDirecotryBuffer = 1 << 7
 )
 
 type Walker struct {
@@ -37,22 +35,21 @@ type Walker struct {
 	IsDry     bool
 	gitignore bool
 	depth     int
+	ignoreErr bool
 
 	// result
-	out     *bufio.Writer
-	outerr  *bufio.Writer
-	IsErr   bool
-	targets entryInfos
-	writing sync.WaitGroup
+	out         *bufio.Writer
+	outerr      io.Writer
+	flushTick   *time.Ticker
+	IsErr       bool
+	directories entryInfos
 
 	// print
 	printType printType
 
 	// concurrency control
-	wg          sync.WaitGroup
-	outmux      sync.Mutex
-	dirMux      sync.Mutex
-	concurrency chan struct{}
+	writingMutex sync.Mutex
+	dirMutex     sync.Mutex
 
 	fmt.Stringer
 }
@@ -66,7 +63,9 @@ type entryInfo struct {
 type entryInfos []*entryInfo
 
 func (w *Walker) Walk(roots []string) {
-	entries := make([]*entryInfo, 0, len(roots))
+	w.flushTick = time.NewTicker(time.Millisecond)
+	defer w.flushTick.Stop()
+
 	for _, r := range roots {
 		f, err := os.Open(r)
 		if err != nil {
@@ -79,28 +78,57 @@ func (w *Walker) Walk(roots []string) {
 			w.writeError(err)
 			continue
 		}
-		entries = append(entries, &entryInfo{path: r, info: entry})
+
+		w.checkEntry(&entryInfo{path: r, info: entry})
 	}
 
-	for depth := 0; len(entries) > 0 && (w.depth == -1 || depth <= w.depth); depth++ {
-		w.targets = w.targets[:0]
-		for i := range entries {
-			w.wg.Add(1)
-			w.concurrency <- struct{}{}
-			go func(entry *entryInfo) {
-				w.walk(entry)
-				<-w.concurrency
-				w.wg.Done()
-			}(entries[i])
-		}
-		w.wg.Wait()
+	var wg sync.WaitGroup
+	dirsChans := make([]chan entryInfos, concurrencyNum)
+	for i := 0; i < concurrencyNum; i++ {
+		i := i
+		dirsChans[i] = make(chan entryInfos)
+		go func() {
+			for dirs := range dirsChans[i] {
+				for _, dir := range dirs {
+					w.scanDir(dir)
+				}
+				wg.Done()
+			}
+		}()
+		defer func() {
+			close(dirsChans[i])
+		}()
+	}
 
-		if cap(entries) >= len(w.targets) {
-			entries = entries[:len(w.targets)]
+	var entries entryInfos
+	for depth := 1; len(w.directories) > 0 && (w.depth == -1 || depth <= w.depth); depth++ {
+		if cap(entries) >= len(w.directories) {
+			entries = entries[:len(w.directories)]
 		} else {
-			entries = make(entryInfos, len(w.targets))
+			entries = make(entryInfos, len(w.directories))
 		}
-		copy(entries, w.targets)
+		copy(entries, w.directories)
+		w.directories = w.directories[:0]
+
+		if len(entries) < concurrencyNum {
+			wg.Add(1)
+			dirsChans[0] <- entries
+		} else {
+			chunkSize := len(entries) / concurrencyNum
+			for i := 0; i < concurrencyNum; i++ {
+				wg.Add(1)
+				if i == concurrencyNum-1 {
+					dirsChans[i] <- entries[i*chunkSize:]
+				} else {
+					dirsChans[i] <- entries[i*chunkSize : (i+1)*chunkSize]
+				}
+			}
+		}
+		wg.Wait()
+	}
+
+	if err := w.out.Flush(); err != nil {
+		log.Printf("[ERROR] %v", err)
 	}
 }
 
@@ -121,7 +149,7 @@ func (w *Walker) String() string {
 	return s.String()
 }
 
-func (w *Walker) walk(entry *entryInfo) {
+func (w *Walker) checkEntry(entry *entryInfo) {
 	if entry.ignore != nil {
 		var (
 			match bool
@@ -150,7 +178,9 @@ func (w *Walker) walk(entry *entryInfo) {
 	}
 
 	if entry.info.IsDir() {
-		w.scanDir(entry)
+		w.dirMutex.Lock()
+		w.directories = append(w.directories, entry)
+		w.dirMutex.Unlock()
 	}
 }
 
@@ -184,61 +214,47 @@ func (w *Walker) scanDir(entry *entryInfo) {
 	newIgnore = entry.ignore.Add(newIgnore)
 
 	for _, f := range files {
-		w.dirMux.Lock()
 		if entry.info.Name() == ".git" {
-			w.targets = append(w.targets, &entryInfo{path: filepath.Join(entry.path, f.Name()), info: f})
+			w.checkEntry(&entryInfo{path: filepath.Join(entry.path, f.Name()), info: f})
 		} else {
-			w.targets = append(w.targets, &entryInfo{path: filepath.Join(entry.path, f.Name()), info: f, ignore: newIgnore})
+			w.checkEntry(&entryInfo{path: filepath.Join(entry.path, f.Name()), info: f, ignore: newIgnore})
 		}
-		w.dirMux.Unlock()
 	}
 }
 
 func (w *Walker) writeError(err error) {
+	if w.ignoreErr {
+		return
+	}
 	w.IsErr = true
-	w.writing.Add(1)
-	go func() {
-		w.outmux.Lock()
-		if _, err := w.outerr.WriteString(err.Error() + "\n"); err != nil {
-			log.Printf("[ERROR] %v", err)
-		}
-		w.outmux.Unlock()
-		w.writing.Done()
-	}()
+	w.writingMutex.Lock()
+	if _, err := w.outerr.Write([]byte(err.Error() + "\n")); err != nil {
+		log.Printf("[ERROR] %v", err)
+	}
+	w.writingMutex.Unlock()
 }
 
 func (w *Walker) writeFile(path string, _ fs.DirEntry) {
-	w.writing.Add(1)
-	go func() {
-		w.outmux.Lock()
-		switch w.printType {
-		case println:
-			if _, err := w.out.WriteString(path + "\n"); err != nil {
-				log.Printf("[ERROR] %v", err)
-			}
-		case print0:
-			if _, err := w.out.WriteString(path + "\x00"); err != nil {
-				log.Printf("[ERROR] %v", err)
-			}
+	w.writingMutex.Lock()
+	switch w.printType {
+	case println:
+		if _, err := w.out.WriteString(path + "\n"); err != nil {
+			log.Printf("[ERROR] %v", err)
 		}
-		w.outmux.Unlock()
-		w.writing.Done()
-	}()
-}
-
-func (w *Walker) Wait() {
-	w.writing.Wait()
-}
-
-func (w *Walker) Flush() {
-	w.outmux.Lock()
-	if err := w.out.Flush(); err != nil {
-		log.Printf("[ERROR] %v", err)
+	case print0:
+		if _, err := w.out.WriteString(path + "\x00"); err != nil {
+			log.Printf("[ERROR] %v", err)
+		}
 	}
-	if err := w.outerr.Flush(); err != nil {
-		log.Printf("[ERROR] %v", err)
+
+	select {
+	case <-w.flushTick.C:
+		if err := w.out.Flush(); err != nil {
+			log.Printf("[ERROR] %v", err)
+		}
+	default:
 	}
-	w.outmux.Unlock()
+	w.writingMutex.Unlock()
 }
 
 func (w *Walker) readDir(dir string) (ds []fs.DirEntry, err error) {

@@ -123,8 +123,8 @@ func TestRun(t *testing.T) {
 			t.Parallel()
 			out := new(bytes.Buffer)
 			outerr := new(bytes.Buffer)
-			if err := run(strings.Split(tt.command, " "), out, outerr); err != nil {
-				t.Errorf("error: %s", outerr.String())
+			if status := run(strings.Split(tt.command, " "), out, outerr); status != 0 {
+				t.Fatal("error status")
 			}
 			if errStr := outerr.String(); errStr != "" {
 				t.Error(errStr)

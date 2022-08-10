@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/go-git/go-git/v5 v5.4.2
-	github.com/komem3/glob v0.0.0-20220120054719-652adce4de0a
+	github.com/komem3/glob v0.0.0-20220810040902-7dfb5f3c78ae
 )
 
 require (

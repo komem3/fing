@@ -4,14 +4,13 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strconv"
 
 	"github.com/komem3/fing/filter"
 )
-
-const defaultMakeLen = 1 << 2
 
 type boolFunc func(bool)
 
@@ -37,6 +36,8 @@ flags are:
   -dry
     Only output parse result of expression.
     If this option is specified, the file will not be searched.
+  -ignore-error
+    Not show errors when opening files, such as permission errors.
   -maxdepth
     The depth to search.
     Unlike find, it can be specified at the same time as prune.
@@ -99,16 +100,12 @@ expression are:
     Support file(f), directory(d), named piep(p) and socket(s).
 `
 
-func NewWalkerFromArgs(args []string, out, outerr *bufio.Writer) (*Walker, []string, error) {
+func NewWalkerFromArgs(args []string, out, outerr io.Writer) (*Walker, []string, error) {
 	walker := &Walker{
-		matcher:     make(filter.OrExp, 0, defaultMakeLen),
-		prunes:      make(filter.OrExp, 0, defaultMakeLen),
-		out:         out,
-		outerr:      outerr,
-		depth:       -1,
-		targets:     make(entryInfos, 0, defaultDirecotryBuffer),
-		concurrency: make(chan struct{}, concurrencyMax),
-		printType:   println,
+		out:       bufio.NewWriter(out),
+		outerr:    outerr,
+		depth:     -1,
+		printType: println,
 	}
 
 	flag := flag.NewFlagSet(args[0], flag.ExitOnError)
@@ -128,7 +125,7 @@ func NewWalkerFromArgs(args []string, out, outerr *bufio.Writer) (*Walker, []str
 		})
 	}
 
-	exp := make(filter.AndExp, 0, defaultMakeLen)
+	var exp filter.AndExp
 	{
 		// expression
 		var isNot bool
@@ -148,6 +145,15 @@ func NewWalkerFromArgs(args []string, out, outerr *bufio.Writer) (*Walker, []str
 				exp = append(exp, toFilter(filter.NewExecutable(), &isNot))
 			}
 		}), "executable", "")
+		flag.Var(boolFunc(func(b bool) {
+			if b {
+				walker.matcher = append(walker.matcher, exp)
+				walker.excludeIgnore = append(walker.excludeIgnore, walker.matcher...)
+				exp = filter.AndExp{}
+				walker.matcher = walker.matcher[:0]
+			}
+		}), "EI", "")
+		flag.BoolVar(&walker.ignoreErr, "ignore-error", false, "")
 		flag.Func("iname", "", func(s string) error {
 			f, err := filter.NewIFileName(s)
 			if err != nil {
@@ -156,14 +162,6 @@ func NewWalkerFromArgs(args []string, out, outerr *bufio.Writer) (*Walker, []str
 			exp = append(exp, toFilter(f, &isNot))
 			return nil
 		})
-		flag.Var(boolFunc(func(b bool) {
-			if b {
-				walker.matcher = append(walker.matcher, exp)
-				walker.excludeIgnore = append(walker.excludeIgnore, walker.matcher...)
-				exp = make(filter.AndExp, 0, defaultMakeLen)
-				walker.matcher = walker.matcher[:0]
-			}
-		}), "EI", "")
 		flag.Var(boolFunc(func(b bool) {
 			if b {
 				exp = append(exp, toFilter(filter.AlwasyExp(false), &isNot))
@@ -206,7 +204,7 @@ func NewWalkerFromArgs(args []string, out, outerr *bufio.Writer) (*Walker, []str
 			if b {
 				if len(exp) > 0 {
 					walker.matcher = append(walker.matcher, exp)
-					exp = make(filter.AndExp, 0, defaultMakeLen)
+					exp = filter.AndExp{}
 				}
 			}
 		}
