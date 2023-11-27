@@ -41,12 +41,8 @@ flags are:
   -maxdepth
     The depth to search.
     Unlike find, it can be specified at the same time as prune.
-  -EI
-    Exclude pattern from I option.
-    This uses the before expressions as well as prune.
-    example: -I <expression> -EI
   -I
-    Ignore files in .gitignore.
+    Ignore files in .gitignore and ~/.fingignore. .fingignore has higher priority.
 
 expression are:
   -a -and
@@ -113,7 +109,7 @@ func NewWalkerFromArgs(args []string, out, outerr io.Writer) (*Walker, []string,
 
 	{
 		// flags
-		flag.BoolVar(&walker.gitignore, "I", false, "")
+		flag.BoolVar(&walker.ignoreFile, "I", false, "")
 		flag.BoolVar(&walker.IsDry, "dry", false, "")
 		flag.Func("maxdepth", "", func(s string) error {
 			d, err := strconv.Atoi(s)
@@ -145,14 +141,6 @@ func NewWalkerFromArgs(args []string, out, outerr io.Writer) (*Walker, []string,
 				exp = append(exp, toFilter(filter.NewExecutable(), &isNot))
 			}
 		}), "executable", "")
-		flag.Var(boolFunc(func(b bool) {
-			if b {
-				walker.matcher = append(walker.matcher, exp)
-				walker.excludeIgnore = append(walker.excludeIgnore, walker.matcher...)
-				exp = filter.AndExp{}
-				walker.matcher = walker.matcher[:0]
-			}
-		}), "EI", "")
 		flag.BoolVar(&walker.ignoreErr, "ignore-error", false, "")
 		flag.Func("iname", "", func(s string) error {
 			f, err := filter.NewIFileName(s)

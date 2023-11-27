@@ -2,6 +2,7 @@ package walk
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -25,17 +26,19 @@ const (
 	print0
 )
 
+const fingignoreFile = ".fingignore"
+
 type Walker struct {
 	// matcher
-	matcher       filter.OrExp
-	prunes        filter.OrExp
-	excludeIgnore filter.OrExp
+	matcher      filter.OrExp
+	prunes       filter.OrExp
+	globalIgnore *filter.Gitignore
 
 	// options
-	IsDry     bool
-	gitignore bool
-	depth     int
-	ignoreErr bool
+	IsDry      bool
+	ignoreFile bool
+	depth      int
+	ignoreErr  bool
 
 	// result
 	out         *bufio.Writer
@@ -65,6 +68,27 @@ type entryInfos []*entryInfo
 func (w *Walker) Walk(roots []string) {
 	w.flushTick = time.NewTicker(time.Millisecond)
 	defer w.flushTick.Stop()
+
+	if w.ignoreFile {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			w.writeError(err)
+			return
+		}
+		if _, err := os.Stat(filepath.Join(home, fingignoreFile)); err != nil {
+			if !errors.Is(err, os.ErrNotExist) {
+				w.writeError(err)
+				return
+			}
+		} else {
+			ignore, err := filter.NewGitIgnore(home, fingignoreFile)
+			if err != nil {
+				w.writeError(err)
+				return
+			}
+			w.globalIgnore = ignore
+		}
+	}
 
 	for _, r := range roots {
 		f, err := os.Open(r)
@@ -134,7 +158,7 @@ func (w *Walker) Walk(roots []string) {
 
 func (w *Walker) String() string {
 	var s strings.Builder
-	if w.gitignore {
+	if w.ignoreFile {
 		s.WriteString("ignore=true ")
 	}
 	if w.depth != -1 {
@@ -150,22 +174,10 @@ func (w *Walker) String() string {
 }
 
 func (w *Walker) checkEntry(entry *entryInfo) {
-	if entry.ignore != nil {
-		var (
-			match bool
-			err   error
-		)
-		if len(w.excludeIgnore) > 0 {
-			match, err = w.excludeIgnore.Match(entry.path, entry.info)
-			if err != nil {
-				w.writeError(err)
-				return
-			}
-		}
-		if !match {
-			if match, _ := entry.ignore.Match(entry.path, entry.info); match {
-				return
-			}
+	ignore := entry.ignore.Add(w.globalIgnore)
+	if ignore != nil {
+		if match, _ := ignore.Match(entry.path, entry.info); match {
+			return
 		}
 	}
 	match, err := w.matcher.Match(entry.path, entry.info)
@@ -201,7 +213,7 @@ func (w *Walker) scanDir(entry *entryInfo) {
 	}
 
 	var newIgnore *filter.Gitignore
-	if w.gitignore {
+	if w.ignoreFile {
 		ignoreFile := w.getIgnore(files)
 		if ignoreFile != "" {
 			newIgnore, err = filter.NewGitIgnore(entry.path, ignoreFile)

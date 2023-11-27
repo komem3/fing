@@ -41,14 +41,6 @@ var tests = []struct {
 		},
 	},
 	{
-		"fing testdata -I -path *jpg_dir* -EI -name *.jpg",
-		[]string{
-			filepath.FromSlash("testdata/jpg_dir/1.jpg"),
-			filepath.FromSlash("testdata/jpg_dir/2.jpg"),
-			filepath.FromSlash("testdata/jpg_dir/3.jpg"),
-		},
-	},
-	{
 		"fing testdata -iname *.jpg -regex .*(3|4).*",
 		[]string{
 			filepath.FromSlash("testdata/jpg_dir/3.jpg"),
