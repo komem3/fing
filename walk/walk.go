@@ -69,24 +69,25 @@ func (w *Walker) Walk(roots []string) {
 	w.flushTick = time.NewTicker(time.Millisecond)
 	defer w.flushTick.Stop()
 
-	if w.ignoreFile {
-		home, err := os.UserHomeDir()
-		if err != nil {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		w.writeError(err)
+		return
+	}
+	ignorepath := filepath.Join(home, fingignoreFile)
+	if _, err := os.Stat(ignorepath); err != nil {
+		if !errors.Is(err, os.ErrNotExist) {
 			w.writeError(err)
 			return
 		}
-		if _, err := os.Stat(filepath.Join(home, fingignoreFile)); err != nil {
-			if !errors.Is(err, os.ErrNotExist) {
-				w.writeError(err)
-				return
-			}
-		} else {
-			ignore, err := filter.NewGitIgnore(home, fingignoreFile)
+	} else {
+		for _, root := range roots {
+			ignore, err := filter.NewGitIgnore(root, ignorepath)
 			if err != nil {
 				w.writeError(err)
 				return
 			}
-			w.globalIgnore = ignore
+			w.globalIgnore = w.globalIgnore.Add(ignore)
 		}
 	}
 
@@ -216,7 +217,7 @@ func (w *Walker) scanDir(entry *entryInfo) {
 	if w.ignoreFile {
 		ignoreFile := w.getIgnore(files)
 		if ignoreFile != "" {
-			newIgnore, err = filter.NewGitIgnore(entry.path, ignoreFile)
+			newIgnore, err = filter.NewGitIgnore(entry.path, filepath.Join(entry.path, ignoreFile))
 			if err != nil {
 				w.writeError(err)
 				return

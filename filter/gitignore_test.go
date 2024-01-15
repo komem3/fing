@@ -64,7 +64,7 @@ func TestNewGitIgnore(t *testing.T) {
 			}
 			tmp.Close()
 
-			ignores, err := filter.NewGitIgnore(tmpDir, filepath.Base(tmp.Name()))
+			ignores, err := filter.NewGitIgnore(tmpDir, filepath.Join(tmpDir, filepath.Base(tmp.Name())))
 			if err != nil {
 				t.Fatal(err)
 			}
