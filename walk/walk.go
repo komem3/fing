@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -58,9 +59,10 @@ type Walker struct {
 }
 
 type entryInfo struct {
-	path   string
-	ignore *filter.Gitignore
-	info   fs.DirEntry
+	path        string
+	ignore      *filter.Gitignore
+	info        fs.DirEntry
+	projectRoot string
 }
 
 type entryInfos []*entryInfo
@@ -103,8 +105,29 @@ func (w *Walker) Walk(roots []string) {
 			w.writeError(err)
 			continue
 		}
+		var (
+			ignore          *filter.Gitignore
+			projectRootPath = []string{f.Name()}
+			projectRoot     string
+		)
+		if w.ignoreFile {
+			for parent := filepath.Join("..", r); ; parent = filepath.Join("..", parent) {
+				dir, err := os.Open(parent)
+				if err != nil {
+					break
+				}
+				projectRootPath = append(projectRootPath, dir.Name())
+				gitignore, err := filter.NewGitIgnore(".", filepath.Join(parent, ".gitignore"))
+				if err == nil {
+					ignore = gitignore
+					slices.Reverse(projectRootPath)
+					projectRoot = filepath.Join(projectRootPath...)
+					break
+				}
+			}
+		}
 
-		w.checkEntry(&entryInfo{path: r, info: entry})
+		w.checkEntry(&entryInfo{path: r, info: entry, ignore: ignore, projectRoot: projectRoot})
 	}
 
 	var wg sync.WaitGroup
@@ -177,7 +200,7 @@ func (w *Walker) String() string {
 func (w *Walker) checkEntry(entry *entryInfo) {
 	ignore := entry.ignore.Add(w.globalIgnore)
 	if ignore != nil {
-		if match, _ := ignore.Match(entry.path, entry.info); match {
+		if match, _ := ignore.Match(filepath.Join(entry.projectRoot, entry.path), entry.info); match {
 			return
 		}
 	}
@@ -217,7 +240,7 @@ func (w *Walker) scanDir(entry *entryInfo) {
 	if w.ignoreFile {
 		ignoreFile := w.getIgnore(files)
 		if ignoreFile != "" {
-			newIgnore, err = filter.NewGitIgnore(entry.path, filepath.Join(entry.path, ignoreFile))
+			newIgnore, err = filter.NewGitIgnore(filepath.Join(entry.projectRoot, entry.path), filepath.Join(entry.path, ignoreFile))
 			if err != nil {
 				w.writeError(err)
 				return
@@ -230,7 +253,7 @@ func (w *Walker) scanDir(entry *entryInfo) {
 		if entry.info.Name() == ".git" {
 			w.checkEntry(&entryInfo{path: filepath.Join(entry.path, f.Name()), info: f})
 		} else {
-			w.checkEntry(&entryInfo{path: filepath.Join(entry.path, f.Name()), info: f, ignore: newIgnore})
+			w.checkEntry(&entryInfo{path: filepath.Join(entry.path, f.Name()), info: f, ignore: newIgnore, projectRoot: entry.projectRoot})
 		}
 	}
 }
