@@ -124,6 +124,10 @@ func (w *Walker) Walk(roots []string) {
 					projectRoot = filepath.Join(projectRootPath...)
 					break
 				}
+				abs, err := filepath.Abs(parent)
+				if err != nil || abs == "/" {
+					break
+				}
 			}
 		}
 
@@ -221,13 +225,15 @@ func (w *Walker) checkEntry(entry *entryInfo) {
 }
 
 func (w *Walker) scanDir(entry *entryInfo) {
-	match, err := w.prunes.Match(entry.path, entry.info)
-	if err != nil {
-		w.writeError(err)
-		return
-	}
-	if len(w.prunes) > 0 && match {
-		return
+	if entry.path != "." {
+		match, err := w.prunes.Match(entry.path, entry.info)
+		if err != nil {
+			w.writeError(err)
+			return
+		}
+		if len(w.prunes) > 0 && match {
+			return
+		}
 	}
 
 	files, err := w.readDir(entry.path)
